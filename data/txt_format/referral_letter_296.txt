@@ -1,0 +1,10 @@
+Patient Name: Jessica Edwards
+DOB: 11/30/2012
+Referring Physician: Joshua Clark
+Receiving Physician: Joshua Mcbride
+Phone: (348)326-2925
+Date: 05/29/2026
+
+Dear Colleague,
+
+Thank you for agreeing to see this patient for specialist evaluation. Relevant history, current medications, and recent lab results are summarized below. Please let me know if you require additional information prior to the appointment.

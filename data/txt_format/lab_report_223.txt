@@ -1,0 +1,9 @@
+Patient Name: Courtney Walker
+DOB: 04/26/1972
+MRN: MR-540897
+Collection Date: 06/13/2026
+Ordering Physician: Kevin Ford
+Phone: 370-899-9173
+
+Test: Complete Blood Count (CBC).
+Results: WBC 6.8 (ref 4.0-11.0), Hgb 13.9 (ref 12.0-16.0), Platelets 250 (ref 150-400). All results within reference range.

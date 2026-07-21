@@ -1,0 +1,10 @@
+Patient Name: Jay Allen
+DOB: 12/25/2013
+Referring Physician: Melinda Mitchell
+Receiving Physician: Rhonda Gutierrez
+Phone: 922-541-7974
+Date: 06/12/2026
+
+Dear Doctor,
+
+I am referring this patient for further evaluation of persistent symptoms unresponsive to first-line treatment. Relevant history and current medications are summarized below. Thank you for seeing this patient at your earliest convenience.

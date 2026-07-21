@@ -1,0 +1,10 @@
+Patient Name: Tiffany Brown
+DOB: 12/07/1983
+Referring Physician: John Lee
+Receiving Physician: Ruth Clayton
+Phone: 536-973-0371
+Date: 06/18/2026
+
+Dear Doctor,
+
+I am writing to request a consultation for this patient regarding findings noted on recent imaging. A summary of the clinical picture and relevant history is enclosed. I would appreciate your assessment at your earliest convenience.

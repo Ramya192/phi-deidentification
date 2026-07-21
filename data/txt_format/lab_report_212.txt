@@ -1,0 +1,9 @@
+Patient Name: Dennis Marshall
+DOB: 04/25/1961
+MRN: MR-977740
+Collection Date: 06/07/2026
+Ordering Physician: Brittany Horton
+Phone: 815-886-9380
+
+Test: Comprehensive Metabolic Panel.
+Results: Glucose 94 (ref 70-99), Sodium 139 (ref 135-145), Potassium 4.1 (ref 3.5-5.0), Creatinine 0.9 (ref 0.6-1.3). All results within reference range.

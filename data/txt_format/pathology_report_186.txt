@@ -1,0 +1,9 @@
+Patient Name: Suzanne Yang
+DOB: 08/07/1987
+MRN: MR-335421
+Specimen Date: 06/12/2026
+Pathologist: Thomas Flores
+Accession Number: ACC-20453825
+
+Specimen: Breast, right, core needle biopsy.
+Gross Description: Three cores of tan-white fibrofatty tissue, measuring 1.2 cm in aggregate length. Microscopic Description: Fibrocystic changes with no atypia identified. Diagnosis: Benign fibrocystic change.

@@ -1,0 +1,10 @@
+Patient Name: Chad Roach
+DOB: 07/28/1996
+Referring Physician: Kristin Daniels
+Receiving Physician: Keith Stephens MD
+Phone: 749.982.1827x448
+Date: 05/12/2026
+
+Dear Doctor,
+
+I am writing to request a consultation for this patient regarding findings noted on recent imaging. A summary of the clinical picture and relevant history is enclosed. I would appreciate your assessment at your earliest convenience.

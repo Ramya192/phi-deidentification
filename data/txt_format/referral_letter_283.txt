@@ -1,0 +1,10 @@
+Patient Name: Katie Gross
+DOB: 01/26/1933
+Referring Physician: Helen Oliver
+Receiving Physician: Arthur Coffey
+Phone: (338)278-2945x6511
+Date: 05/24/2026
+
+Dear Doctor,
+
+I am referring this patient for further evaluation of persistent symptoms unresponsive to first-line treatment. Relevant history and current medications are summarized below. Thank you for seeing this patient at your earliest convenience.

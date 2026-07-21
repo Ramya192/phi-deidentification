@@ -1,0 +1,10 @@
+Patient Name: Christopher Reed
+DOB: 06/02/1978
+Referring Physician: Eric Ferrell
+Receiving Physician: Desiree Brown
+Phone: 560-884-3256x216
+Date: 06/04/2026
+
+Dear Doctor,
+
+I am referring this patient for further evaluation of persistent symptoms unresponsive to first-line treatment. Relevant history and current medications are summarized below. Thank you for seeing this patient at your earliest convenience.

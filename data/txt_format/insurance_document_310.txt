@@ -1,0 +1,13 @@
+Patient Name: Elizabeth Warren
+Member ID: MBR-3936226
+Policy Number: POL-1503-f
+Claim Number: CLM-2026-68166
+Date of Service: 06/30/2026
+Phone: 7784235784
+
+Service Description: Office visit, established patient, moderate complexity.
+Amount Billed: $185.00
+Copay: $25.00
+Amount Paid by Plan: $160.00
+
+Questions about this claim? Call member services.

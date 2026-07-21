@@ -1,0 +1,10 @@
+Patient Name: Heather Watts
+DOB: 05/23/1995
+Referring Physician: Ryan Harrison
+Receiving Physician: Catherine Hughes
+Phone: 322.433.0604x6333
+Date: 06/23/2026
+
+Dear Doctor,
+
+I am referring this patient for further evaluation of persistent symptoms unresponsive to first-line treatment. Relevant history and current medications are summarized below. Thank you for seeing this patient at your earliest convenience.

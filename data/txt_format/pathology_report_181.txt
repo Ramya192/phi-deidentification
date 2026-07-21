@@ -1,0 +1,9 @@
+Patient Name: Maxwell Barrett
+DOB: 06/06/1954
+MRN: MR-225245
+Specimen Date: 05/13/2026
+Pathologist: Meredith Martin
+Accession Number: ACC-56533974
+
+Specimen: Colon, sigmoid, polypectomy.
+Gross Description: Single polypoid fragment of tan-pink mucosal tissue, 0.6 cm in greatest dimension. Microscopic Description: Tubular adenoma with low-grade dysplasia. Diagnosis: Tubular adenoma, margins uninvolved.

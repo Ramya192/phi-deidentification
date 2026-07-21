@@ -1,0 +1,10 @@
+Patient Name: Lauren Vazquez
+DOB: 03/19/2024
+Referring Physician: Jacqueline Davis
+Receiving Physician: Brandon Montgomery
+Phone: 001-500-252-8127x35857
+Date: 06/17/2026
+
+Dear Colleague,
+
+Thank you for agreeing to see this patient for specialist evaluation. Relevant history, current medications, and recent lab results are summarized below. Please let me know if you require additional information prior to the appointment.

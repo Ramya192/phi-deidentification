@@ -1,0 +1,9 @@
+Patient Name: Jennifer Doyle
+DOB: 11/15/2009
+MRN: MR-842464
+Collection Date: 07/06/2026
+Ordering Physician: Grace Reeves
+Phone: +1-487-758-4282x41724
+
+Test: Lipid Panel.
+Results: Total Cholesterol 178 (ref <200), LDL 104 (ref <130), HDL 52 (ref >40), Triglycerides 110 (ref <150). All results within reference range.

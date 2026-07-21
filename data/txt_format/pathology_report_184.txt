@@ -1,0 +1,9 @@
+Patient Name: Ian Porter
+DOB: 09/05/2007
+MRN: MR-274987
+Specimen Date: 06/16/2026
+Pathologist: Raymond Shannon
+Accession Number: ACC-25479814
+
+Specimen: Colon, sigmoid, polypectomy.
+Gross Description: Single polypoid fragment of tan-pink mucosal tissue, 0.6 cm in greatest dimension. Microscopic Description: Tubular adenoma with low-grade dysplasia. Diagnosis: Tubular adenoma, margins uninvolved.

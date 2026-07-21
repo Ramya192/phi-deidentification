@@ -1,0 +1,13 @@
+Patient Name: Vickie Gregory
+Member ID: MBR-6439759
+Policy Number: POL-1982-u
+Claim Number: CLM-2026-37948
+Date of Service: 05/16/2026
+Phone: 001-725-411-4262
+
+Service Description: Outpatient physical therapy session.
+Amount Billed: $120.00
+Coinsurance: $18.00
+Amount Paid by Plan: $102.00
+
+This is not a bill. Questions about this claim? Call member services.

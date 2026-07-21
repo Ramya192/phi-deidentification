@@ -1,0 +1,13 @@
+Patient Name: Karen Lopez
+Member ID: MBR-7452434
+Policy Number: POL-5624-Q
+Claim Number: CLM-2026-26455
+Date of Service: 05/25/2026
+Phone: 8109276212
+
+Service Description: Outpatient physical therapy session.
+Amount Billed: $120.00
+Coinsurance: $18.00
+Amount Paid by Plan: $102.00
+
+This is not a bill. Questions about this claim? Call member services.

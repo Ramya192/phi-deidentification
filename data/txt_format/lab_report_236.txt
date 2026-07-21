@@ -1,0 +1,9 @@
+Patient Name: Ashley Malone
+DOB: 09/14/1960
+MRN: MR-102303
+Collection Date: 06/14/2026
+Ordering Physician: Mark Marsh
+Phone: +1-385-610-2726
+
+Test: Comprehensive Metabolic Panel.
+Results: Glucose 94 (ref 70-99), Sodium 139 (ref 135-145), Potassium 4.1 (ref 3.5-5.0), Creatinine 0.9 (ref 0.6-1.3). All results within reference range.

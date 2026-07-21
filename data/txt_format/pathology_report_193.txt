@@ -1,0 +1,9 @@
+Patient Name: Jessica Brandt
+DOB: 09/30/1962
+MRN: MR-405844
+Specimen Date: 06/06/2026
+Pathologist: Tammy Long
+Accession Number: ACC-53788744
+
+Specimen: Colon, sigmoid, polypectomy.
+Gross Description: Single polypoid fragment of tan-pink mucosal tissue, 0.6 cm in greatest dimension. Microscopic Description: Tubular adenoma with low-grade dysplasia. Diagnosis: Tubular adenoma, margins uninvolved.

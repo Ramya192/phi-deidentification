@@ -1,0 +1,9 @@
+Patient Name: Brenda Smith
+DOB: 10/11/1960
+MRN: MR-237064
+Specimen Date: 05/31/2026
+Pathologist: Jacqueline Mccoy
+Accession Number: ACC-96528158
+
+Specimen: Breast, right, core needle biopsy.
+Gross Description: Three cores of tan-white fibrofatty tissue, measuring 1.2 cm in aggregate length. Microscopic Description: Fibrocystic changes with no atypia identified. Diagnosis: Benign fibrocystic change.

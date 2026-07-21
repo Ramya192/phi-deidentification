@@ -1,0 +1,9 @@
+Patient Name: Kara Jackson
+DOB: 05/14/1985
+MRN: MR-250840
+Collection Date: 07/10/2026
+Ordering Physician: Jennifer Foster
+Phone: 430-674-5054x44713
+
+Test: Lipid Panel.
+Results: Total Cholesterol 178 (ref <200), LDL 104 (ref <130), HDL 52 (ref >40), Triglycerides 110 (ref <150). All results within reference range.

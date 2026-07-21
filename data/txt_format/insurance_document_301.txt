@@ -1,0 +1,13 @@
+Patient Name: Alexander Chavez
+Member ID: MBR-4387856
+Policy Number: POL-7145-S
+Claim Number: CLM-2026-95010
+Date of Service: 05/27/2026
+Phone: 001-811-817-5186x892
+
+Service Description: Office visit, established patient, moderate complexity.
+Amount Billed: $185.00
+Copay: $25.00
+Amount Paid by Plan: $160.00
+
+Questions about this claim? Call member services.

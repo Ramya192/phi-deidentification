@@ -1,0 +1,13 @@
+Patient Name: Sheila Bennett
+Member ID: MBR-4702106
+Policy Number: POL-1797-d
+Claim Number: CLM-2026-67129
+Date of Service: 05/26/2026
+Phone: 797.626.5273
+
+Service Description: Office visit, established patient, moderate complexity.
+Amount Billed: $185.00
+Copay: $25.00
+Amount Paid by Plan: $160.00
+
+Questions about this claim? Call member services.

@@ -1,0 +1,9 @@
+Patient Name: Kristy Hart
+DOB: 02/22/1956
+MRN: MR-977340
+Collection Date: 06/28/2026
+Ordering Physician: Casey Johnson
+Phone: 5394308705
+
+Test: Lipid Panel.
+Results: Total Cholesterol 178 (ref <200), LDL 104 (ref <130), HDL 52 (ref >40), Triglycerides 110 (ref <150). All results within reference range.

@@ -1,0 +1,9 @@
+Patient Name: Megan Jones
+DOB: 03/10/2007
+MRN: MR-108886
+Specimen Date: 07/10/2026
+Pathologist: Jessica Bowen
+Accession Number: ACC-94299475
+
+Specimen: Breast, right, core needle biopsy.
+Gross Description: Three cores of tan-white fibrofatty tissue, measuring 1.2 cm in aggregate length. Microscopic Description: Fibrocystic changes with no atypia identified. Diagnosis: Benign fibrocystic change.

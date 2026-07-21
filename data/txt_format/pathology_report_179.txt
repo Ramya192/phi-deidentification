@@ -1,0 +1,9 @@
+Patient Name: Bob Mccall
+DOB: 09/02/1951
+MRN: MR-662445
+Specimen Date: 06/12/2026
+Pathologist: Mark Davenport
+Accession Number: ACC-96322745
+
+Specimen: Skin, left forearm, punch biopsy.
+Gross Description: Single tan-pink skin ellipse. Microscopic Description: Unremarkable epidermis and dermis. Diagnosis: Benign, no evidence of malignancy.

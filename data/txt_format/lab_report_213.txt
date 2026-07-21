@@ -1,0 +1,9 @@
+Patient Name: Melissa Mayer
+DOB: 06/20/2008
+MRN: MR-347088
+Collection Date: 06/27/2026
+Ordering Physician: James Nash
+Phone: 4894899217
+
+Test: Lipid Panel.
+Results: Total Cholesterol 178 (ref <200), LDL 104 (ref <130), HDL 52 (ref >40), Triglycerides 110 (ref <150). All results within reference range.

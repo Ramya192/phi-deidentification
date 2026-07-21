@@ -1,0 +1,9 @@
+Patient Name: Alyssa Roman
+DOB: 07/17/1967
+MRN: MR-649300
+Specimen Date: 05/18/2026
+Pathologist: William Burton
+Accession Number: ACC-76591799
+
+Specimen: Breast, right, core needle biopsy.
+Gross Description: Three cores of tan-white fibrofatty tissue, measuring 1.2 cm in aggregate length. Microscopic Description: Fibrocystic changes with no atypia identified. Diagnosis: Benign fibrocystic change.

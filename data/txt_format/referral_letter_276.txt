@@ -1,0 +1,10 @@
+Patient Name: Sarah Cooper
+DOB: 05/19/1994
+Referring Physician: Melissa Vasquez
+Receiving Physician: Elizabeth Cannon
+Phone: 893-808-5368x6632
+Date: 06/02/2026
+
+Dear Doctor,
+
+I am writing to request a consultation for this patient regarding findings noted on recent imaging. A summary of the clinical picture and relevant history is enclosed. I would appreciate your assessment at your earliest convenience.

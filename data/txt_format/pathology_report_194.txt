@@ -1,0 +1,9 @@
+Patient Name: Dillon Jones
+DOB: 02/10/1958
+MRN: MR-242723
+Specimen Date: 07/07/2026
+Pathologist: Brian Cole
+Accession Number: ACC-52148834
+
+Specimen: Skin, left forearm, punch biopsy.
+Gross Description: Single tan-pink skin ellipse. Microscopic Description: Unremarkable epidermis and dermis. Diagnosis: Benign, no evidence of malignancy.

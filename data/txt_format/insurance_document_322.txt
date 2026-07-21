@@ -1,0 +1,13 @@
+Patient Name: Laura Johnson
+Member ID: MBR-1635269
+Policy Number: POL-9751-L
+Claim Number: CLM-2026-73115
+Date of Service: 05/19/2026
+Phone: (584)978-1891
+
+Service Description: Office visit, established patient, moderate complexity.
+Amount Billed: $185.00
+Copay: $25.00
+Amount Paid by Plan: $160.00
+
+Questions about this claim? Call member services.

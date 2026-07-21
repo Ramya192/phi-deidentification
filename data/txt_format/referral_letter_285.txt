@@ -1,0 +1,10 @@
+Patient Name: Amy Jensen
+DOB: 07/10/2002
+Referring Physician: Benjamin Torres
+Receiving Physician: Toni Davis
+Phone: 001-338-763-3839x2886
+Date: 06/25/2026
+
+Dear Doctor,
+
+I am writing to request a consultation for this patient regarding findings noted on recent imaging. A summary of the clinical picture and relevant history is enclosed. I would appreciate your assessment at your earliest convenience.

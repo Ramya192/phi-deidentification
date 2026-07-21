@@ -1,0 +1,9 @@
+Patient Name: Mark Burton
+DOB: 08/01/1981
+MRN: MR-573947
+Specimen Date: 05/19/2026
+Pathologist: Sheryl Davis
+Accession Number: ACC-79204468
+
+Specimen: Breast, right, core needle biopsy.
+Gross Description: Three cores of tan-white fibrofatty tissue, measuring 1.2 cm in aggregate length. Microscopic Description: Fibrocystic changes with no atypia identified. Diagnosis: Benign fibrocystic change.

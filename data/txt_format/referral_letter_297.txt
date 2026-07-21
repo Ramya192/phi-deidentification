@@ -1,0 +1,10 @@
+Patient Name: Shawn Acosta
+DOB: 11/24/1973
+Referring Physician: Jennifer Jenkins
+Receiving Physician: Timothy Shannon
+Phone: 001-542-531-2209x9499
+Date: 06/03/2026
+
+Dear Doctor,
+
+I am writing to request a consultation for this patient regarding findings noted on recent imaging. A summary of the clinical picture and relevant history is enclosed. I would appreciate your assessment at your earliest convenience.

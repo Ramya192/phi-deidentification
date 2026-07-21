@@ -1,0 +1,10 @@
+Patient Name: Robert Butler
+DOB: 12/06/1946
+Referring Physician: Cristina Delgado
+Receiving Physician: Alexandra Waters
+Phone: (204)880-5892x5832
+Date: 06/24/2026
+
+Dear Doctor,
+
+I am referring this patient for further evaluation of persistent symptoms unresponsive to first-line treatment. Relevant history and current medications are summarized below. Thank you for seeing this patient at your earliest convenience.

@@ -1,0 +1,13 @@
+Patient Name: Tammy Thompson
+Member ID: MBR-1487633
+Policy Number: POL-7811-p
+Claim Number: CLM-2026-68303
+Date of Service: 07/08/2026
+Phone: 001-356-535-3153
+
+Service Description: Diagnostic imaging, MRI without contrast.
+Amount Billed: $950.00
+Deductible Applied: $250.00
+Amount Paid by Plan: $700.00
+
+Questions about this claim? Call member services.

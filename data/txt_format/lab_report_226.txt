@@ -1,0 +1,9 @@
+Patient Name: Haley Anderson
+DOB: 09/22/1982
+MRN: MR-627786
+Collection Date: 07/08/2026
+Ordering Physician: Austin Williams
+Phone: 878-298-5625x7532
+
+Test: Complete Blood Count (CBC).
+Results: WBC 6.8 (ref 4.0-11.0), Hgb 13.9 (ref 12.0-16.0), Platelets 250 (ref 150-400). All results within reference range.

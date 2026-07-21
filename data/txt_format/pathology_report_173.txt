@@ -1,0 +1,9 @@
+Patient Name: Jeffrey Moody
+DOB: 03/31/1964
+MRN: MR-390421
+Specimen Date: 05/20/2026
+Pathologist: Kyle Griffith
+Accession Number: ACC-48241423
+
+Specimen: Skin, left forearm, punch biopsy.
+Gross Description: Single tan-pink skin ellipse. Microscopic Description: Unremarkable epidermis and dermis. Diagnosis: Benign, no evidence of malignancy.

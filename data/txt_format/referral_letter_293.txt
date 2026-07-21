@@ -1,0 +1,10 @@
+Patient Name: Deanna Webb
+DOB: 10/05/1949
+Referring Physician: Mary Bennett
+Receiving Physician: Kelsey Scott
+Phone: 8436940701
+Date: 06/15/2026
+
+Dear Colleague,
+
+Thank you for agreeing to see this patient for specialist evaluation. Relevant history, current medications, and recent lab results are summarized below. Please let me know if you require additional information prior to the appointment.

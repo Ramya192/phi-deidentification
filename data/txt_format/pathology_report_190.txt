@@ -1,0 +1,9 @@
+Patient Name: Jason Hall
+DOB: 09/02/1977
+MRN: MR-766833
+Specimen Date: 05/12/2026
+Pathologist: April Sandoval
+Accession Number: ACC-51273379
+
+Specimen: Colon, sigmoid, polypectomy.
+Gross Description: Single polypoid fragment of tan-pink mucosal tissue, 0.6 cm in greatest dimension. Microscopic Description: Tubular adenoma with low-grade dysplasia. Diagnosis: Tubular adenoma, margins uninvolved.

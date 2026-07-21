@@ -1,0 +1,8 @@
+Patient Name: Wyatt Young
+DOB: 12/06/2008
+MRN: MR-434394
+Exam Date: 07/07/2026
+Referring Physician: Megan Flores
+Radiologist: Charles Keller
+
+EXAM: , Three views of the right ankle.,INDICATIONS:  ,Pain.,FINDINGS: , Three views of the right ankle are obtained.  There is no evidence of fractures or dislocations.  No significant degenerative changes or destructive osseous lesions of the ankle are noted.  There is a small plantar calcaneal spur.  There is no significant surrounding soft tissue swelling.,IMPRESSION:  ,Negative right ankle.

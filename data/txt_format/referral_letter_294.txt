@@ -1,0 +1,10 @@
+Patient Name: Alicia Dillon
+DOB: 11/28/2018
+Referring Physician: William Romero
+Receiving Physician: Stephanie Washington
+Phone: +1-681-723-8780x038
+Date: 06/28/2026
+
+Dear Doctor,
+
+I am writing to request a consultation for this patient regarding findings noted on recent imaging. A summary of the clinical picture and relevant history is enclosed. I would appreciate your assessment at your earliest convenience.

@@ -1,0 +1,13 @@
+Patient Name: Kenneth Hanson
+Member ID: MBR-3176225
+Policy Number: POL-9978-U
+Claim Number: CLM-2026-92818
+Date of Service: 06/29/2026
+Phone: 829.834.3010x7139
+
+Service Description: Diagnostic imaging, MRI without contrast.
+Amount Billed: $950.00
+Deductible Applied: $250.00
+Amount Paid by Plan: $700.00
+
+Questions about this claim? Call member services.

@@ -1,0 +1,13 @@
+Patient Name: Diana Johnson
+Member ID: MBR-7295495
+Policy Number: POL-8299-y
+Claim Number: CLM-2026-34560
+Date of Service: 07/08/2026
+Phone: 745-904-6173
+
+Service Description: Diagnostic imaging, MRI without contrast.
+Amount Billed: $950.00
+Deductible Applied: $250.00
+Amount Paid by Plan: $700.00
+
+Questions about this claim? Call member services.

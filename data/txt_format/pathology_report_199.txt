@@ -1,0 +1,9 @@
+Patient Name: Kevin Lowery
+DOB: 09/23/1940
+MRN: MR-122859
+Specimen Date: 05/18/2026
+Pathologist: Matthew Lamb
+Accession Number: ACC-22345163
+
+Specimen: Colon, sigmoid, polypectomy.
+Gross Description: Single polypoid fragment of tan-pink mucosal tissue, 0.6 cm in greatest dimension. Microscopic Description: Tubular adenoma with low-grade dysplasia. Diagnosis: Tubular adenoma, margins uninvolved.

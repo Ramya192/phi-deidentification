@@ -1,0 +1,13 @@
+Patient Name: Tony Brock
+Member ID: MBR-5107483
+Policy Number: POL-2149-v
+Claim Number: CLM-2026-80854
+Date of Service: 06/24/2026
+Phone: 8208701601
+
+Service Description: Office visit, established patient, moderate complexity.
+Amount Billed: $185.00
+Copay: $25.00
+Amount Paid by Plan: $160.00
+
+Questions about this claim? Call member services.

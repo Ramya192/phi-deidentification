@@ -1,0 +1,10 @@
+Patient Name: Katherine Nguyen
+DOB: 10/17/1992
+Referring Physician: Jessica Parsons
+Receiving Physician: Samantha Cortez
+Phone: (899)298-8081x7703
+Date: 07/05/2026
+
+Dear Colleague,
+
+Thank you for agreeing to see this patient for specialist evaluation. Relevant history, current medications, and recent lab results are summarized below. Please let me know if you require additional information prior to the appointment.

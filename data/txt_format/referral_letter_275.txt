@@ -1,0 +1,10 @@
+Patient Name: Kyle Welch
+DOB: 01/23/2017
+Referring Physician: Jessica Bowman
+Receiving Physician: Susan Olson
+Phone: 217.245.6424
+Date: 07/01/2026
+
+Dear Colleague,
+
+Thank you for agreeing to see this patient for specialist evaluation. Relevant history, current medications, and recent lab results are summarized below. Please let me know if you require additional information prior to the appointment.

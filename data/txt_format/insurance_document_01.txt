@@ -1,0 +1,17 @@
+EXPLANATION OF BENEFITS
+
+Member ID: MBR-9982134
+Policy Number: POL-4471-A
+Claim Number: CLM-2026-00981
+
+Patient: Samuel Okafor
+Date of Service: 06/28/2026
+Provider: Riverside Medical Group
+
+Service Description: Office visit, established patient, moderate complexity.
+Amount Billed: $185.00
+Copay: $25.00
+Deductible Applied: $0.00
+Amount Paid by Plan: $160.00
+
+Questions about this claim? Call member services at (555) 900-1122.

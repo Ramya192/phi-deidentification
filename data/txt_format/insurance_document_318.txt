@@ -1,0 +1,13 @@
+Patient Name: Stacy Berger
+Member ID: MBR-1003092
+Policy Number: POL-2278-s
+Claim Number: CLM-2026-61115
+Date of Service: 07/10/2026
+Phone: 001-773-335-4946
+
+Service Description: Diagnostic imaging, MRI without contrast.
+Amount Billed: $950.00
+Deductible Applied: $250.00
+Amount Paid by Plan: $700.00
+
+Questions about this claim? Call member services.

@@ -1,0 +1,9 @@
+Patient Name: Kelly Wallace
+DOB: 08/15/1931
+MRN: MR-829386
+Specimen Date: 06/14/2026
+Pathologist: Virginia Henderson
+Accession Number: ACC-27740248
+
+Specimen: Colon, sigmoid, polypectomy.
+Gross Description: Single polypoid fragment of tan-pink mucosal tissue, 0.6 cm in greatest dimension. Microscopic Description: Tubular adenoma with low-grade dysplasia. Diagnosis: Tubular adenoma, margins uninvolved.

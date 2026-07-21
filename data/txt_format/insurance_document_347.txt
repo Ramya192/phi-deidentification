@@ -1,0 +1,13 @@
+Patient Name: Judith Miller
+Member ID: MBR-3999964
+Policy Number: POL-4112-r
+Claim Number: CLM-2026-24683
+Date of Service: 05/26/2026
+Phone: 223.680.4682x7567
+
+Service Description: Outpatient physical therapy session.
+Amount Billed: $120.00
+Coinsurance: $18.00
+Amount Paid by Plan: $102.00
+
+This is not a bill. Questions about this claim? Call member services.

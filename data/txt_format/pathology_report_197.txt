@@ -1,0 +1,9 @@
+Patient Name: Debbie Ewing
+DOB: 10/03/1934
+MRN: MR-524035
+Specimen Date: 06/24/2026
+Pathologist: Krista Davis
+Accession Number: ACC-23677772
+
+Specimen: Skin, left forearm, punch biopsy.
+Gross Description: Single tan-pink skin ellipse. Microscopic Description: Unremarkable epidermis and dermis. Diagnosis: Benign, no evidence of malignancy.

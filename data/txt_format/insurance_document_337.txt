@@ -1,0 +1,13 @@
+Patient Name: Jennifer Hurley
+Member ID: MBR-1631179
+Policy Number: POL-9279-f
+Claim Number: CLM-2026-92207
+Date of Service: 06/10/2026
+Phone: (560)983-3181x958
+
+Service Description: Office visit, established patient, moderate complexity.
+Amount Billed: $185.00
+Copay: $25.00
+Amount Paid by Plan: $160.00
+
+Questions about this claim? Call member services.

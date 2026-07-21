@@ -1,0 +1,10 @@
+Patient Name: Ricardo Morris
+DOB: 12/02/2008
+Referring Physician: Michael Henderson
+Receiving Physician: Frank Wheeler
+Phone: 2425597927
+Date: 05/31/2026
+
+Dear Doctor,
+
+I am writing to request a consultation for this patient regarding findings noted on recent imaging. A summary of the clinical picture and relevant history is enclosed. I would appreciate your assessment at your earliest convenience.

@@ -1,0 +1,13 @@
+Patient Name: Robert Scott
+Member ID: MBR-7562471
+Policy Number: POL-7393-H
+Claim Number: CLM-2026-54224
+Date of Service: 05/29/2026
+Phone: 680-501-0618x17534
+
+Service Description: Diagnostic imaging, MRI without contrast.
+Amount Billed: $950.00
+Deductible Applied: $250.00
+Amount Paid by Plan: $700.00
+
+Questions about this claim? Call member services.

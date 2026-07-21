@@ -1,0 +1,13 @@
+Patient Name: Gabriela Randolph
+Member ID: MBR-9635845
+Policy Number: POL-5016-x
+Claim Number: CLM-2026-70994
+Date of Service: 05/15/2026
+Phone: (952)581-8325x381
+
+Service Description: Diagnostic imaging, MRI without contrast.
+Amount Billed: $950.00
+Deductible Applied: $250.00
+Amount Paid by Plan: $700.00
+
+Questions about this claim? Call member services.

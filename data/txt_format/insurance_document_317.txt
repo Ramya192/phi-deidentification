@@ -1,0 +1,13 @@
+Patient Name: Michael Stevenson
+Member ID: MBR-9164301
+Policy Number: POL-1997-u
+Claim Number: CLM-2026-82756
+Date of Service: 05/21/2026
+Phone: 324.561.9196x570
+
+Service Description: Outpatient physical therapy session.
+Amount Billed: $120.00
+Coinsurance: $18.00
+Amount Paid by Plan: $102.00
+
+This is not a bill. Questions about this claim? Call member services.

@@ -1,0 +1,13 @@
+Patient Name: Mary Barnett
+Member ID: MBR-6242875
+Policy Number: POL-9058-X
+Claim Number: CLM-2026-11413
+Date of Service: 06/26/2026
+Phone: 687.695.6544x209
+
+Service Description: Outpatient physical therapy session.
+Amount Billed: $120.00
+Coinsurance: $18.00
+Amount Paid by Plan: $102.00
+
+This is not a bill. Questions about this claim? Call member services.

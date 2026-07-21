@@ -1,0 +1,13 @@
+Patient Name: Sandra Cole
+Member ID: MBR-1275453
+Policy Number: POL-0505-Y
+Claim Number: CLM-2026-15611
+Date of Service: 06/20/2026
+Phone: 238-478-2931
+
+Service Description: Diagnostic imaging, MRI without contrast.
+Amount Billed: $950.00
+Deductible Applied: $250.00
+Amount Paid by Plan: $700.00
+
+Questions about this claim? Call member services.

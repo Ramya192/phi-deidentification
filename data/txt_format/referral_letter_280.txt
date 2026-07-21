@@ -1,0 +1,10 @@
+Patient Name: Emily Morris
+DOB: 02/25/2016
+Referring Physician: Natasha Dunn
+Receiving Physician: John Evans
+Phone: (803)513-6502x491
+Date: 05/12/2026
+
+Dear Doctor,
+
+I am referring this patient for further evaluation of persistent symptoms unresponsive to first-line treatment. Relevant history and current medications are summarized below. Thank you for seeing this patient at your earliest convenience.

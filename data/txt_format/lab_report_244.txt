@@ -1,0 +1,9 @@
+Patient Name: Emily Robinson
+DOB: 07/20/1955
+MRN: MR-645895
+Collection Date: 05/18/2026
+Ordering Physician: Caitlin Daniels
+Phone: (215)333-5554x3987
+
+Test: Complete Blood Count (CBC).
+Results: WBC 6.8 (ref 4.0-11.0), Hgb 13.9 (ref 12.0-16.0), Platelets 250 (ref 150-400). All results within reference range.

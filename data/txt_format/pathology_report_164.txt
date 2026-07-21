@@ -1,0 +1,9 @@
+Patient Name: Judy Beck
+DOB: 04/12/1979
+MRN: MR-991401
+Specimen Date: 05/18/2026
+Pathologist: Jennifer Donaldson
+Accession Number: ACC-38434222
+
+Specimen: Skin, left forearm, punch biopsy.
+Gross Description: Single tan-pink skin ellipse. Microscopic Description: Unremarkable epidermis and dermis. Diagnosis: Benign, no evidence of malignancy.

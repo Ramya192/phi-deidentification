@@ -1,0 +1,9 @@
+Patient Name: Rachel Le
+DOB: 03/31/1953
+MRN: MR-489933
+Specimen Date: 05/24/2026
+Pathologist: Shelley Quinn
+Accession Number: ACC-25845304
+
+Specimen: Skin, left forearm, punch biopsy.
+Gross Description: Single tan-pink skin ellipse. Microscopic Description: Unremarkable epidermis and dermis. Diagnosis: Benign, no evidence of malignancy.

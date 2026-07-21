@@ -1,0 +1,13 @@
+Patient Name: Manuel Brown
+Member ID: MBR-4637715
+Policy Number: POL-9111-M
+Claim Number: CLM-2026-27027
+Date of Service: 06/17/2026
+Phone: +1-492-312-4471x74654
+
+Service Description: Office visit, established patient, moderate complexity.
+Amount Billed: $185.00
+Copay: $25.00
+Amount Paid by Plan: $160.00
+
+Questions about this claim? Call member services.

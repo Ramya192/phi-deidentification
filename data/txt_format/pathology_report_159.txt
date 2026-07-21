@@ -1,0 +1,9 @@
+Patient Name: Daniel Clark
+DOB: 08/08/1938
+MRN: MR-697766
+Specimen Date: 06/15/2026
+Pathologist: Linda Jackson
+Accession Number: ACC-49276764
+
+Specimen: Breast, right, core needle biopsy.
+Gross Description: Three cores of tan-white fibrofatty tissue, measuring 1.2 cm in aggregate length. Microscopic Description: Fibrocystic changes with no atypia identified. Diagnosis: Benign fibrocystic change.

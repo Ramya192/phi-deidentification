@@ -1,0 +1,13 @@
+Patient Name: Mary Hill
+Member ID: MBR-4250065
+Policy Number: POL-1277-l
+Claim Number: CLM-2026-30940
+Date of Service: 05/16/2026
+Phone: 2543364597
+
+Service Description: Outpatient physical therapy session.
+Amount Billed: $120.00
+Coinsurance: $18.00
+Amount Paid by Plan: $102.00
+
+This is not a bill. Questions about this claim? Call member services.

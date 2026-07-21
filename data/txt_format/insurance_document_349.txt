@@ -1,0 +1,13 @@
+Patient Name: Patricia Williams
+Member ID: MBR-6924385
+Policy Number: POL-4729-k
+Claim Number: CLM-2026-80165
+Date of Service: 06/08/2026
+Phone: (422)923-1059
+
+Service Description: Office visit, established patient, moderate complexity.
+Amount Billed: $185.00
+Copay: $25.00
+Amount Paid by Plan: $160.00
+
+Questions about this claim? Call member services.

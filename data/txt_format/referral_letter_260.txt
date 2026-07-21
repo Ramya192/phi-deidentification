@@ -1,0 +1,8 @@
+Patient Name: Ralph Kent
+DOB: 12/06/1941
+Referring Physician: Shawn Ortiz
+Receiving Physician: Michael Clarke
+Phone: 001-781-380-6356
+Date: 05/27/2026
+
+XYZ, D.C.,60 Evergreen Place,Suite 902,East Orange, NJ  07018,Re:

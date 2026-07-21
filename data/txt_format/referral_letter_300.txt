@@ -1,0 +1,10 @@
+Patient Name: Phillip Estes
+DOB: 05/12/1956
+Referring Physician: James Torres
+Receiving Physician: Julia Henderson
+Phone: +1-408-827-7181x298
+Date: 06/21/2026
+
+Dear Doctor,
+
+I am writing to request a consultation for this patient regarding findings noted on recent imaging. A summary of the clinical picture and relevant history is enclosed. I would appreciate your assessment at your earliest convenience.

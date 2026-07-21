@@ -1,0 +1,9 @@
+Patient Name: Matthew Hunt
+DOB: 06/06/1952
+MRN: MR-292930
+Collection Date: 06/02/2026
+Ordering Physician: Dawn Wilson
+Phone: +1-790-787-8141x41397
+
+Test: Complete Blood Count (CBC).
+Results: WBC 6.8 (ref 4.0-11.0), Hgb 13.9 (ref 12.0-16.0), Platelets 250 (ref 150-400). All results within reference range.

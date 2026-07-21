@@ -1,0 +1,10 @@
+Patient Name: Angela Huynh
+DOB: 08/01/1983
+Referring Physician: David Mitchell
+Receiving Physician: Bonnie Roberson
+Phone: 9054577848
+Date: 07/03/2026
+
+Dear Doctor,
+
+I am referring this patient for further evaluation of persistent symptoms unresponsive to first-line treatment. Relevant history and current medications are summarized below. Thank you for seeing this patient at your earliest convenience.

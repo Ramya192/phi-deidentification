@@ -1,0 +1,13 @@
+Patient Name: Michael Chan
+Member ID: MBR-3033459
+Policy Number: POL-9855-R
+Claim Number: CLM-2026-49692
+Date of Service: 06/19/2026
+Phone: 4152851743
+
+Service Description: Office visit, established patient, moderate complexity.
+Amount Billed: $185.00
+Copay: $25.00
+Amount Paid by Plan: $160.00
+
+Questions about this claim? Call member services.

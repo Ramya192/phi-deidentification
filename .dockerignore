@@ -1,0 +1,10 @@
+.git
+.gitignore
+.venv
+__pycache__
+**/__pycache__
+.pytest_cache
+data/checkpoints.sqlite
+data/demo_uploads
+*.pyc
+.DS_Store

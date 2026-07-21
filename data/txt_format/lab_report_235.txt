@@ -1,0 +1,9 @@
+Patient Name: Dr. Alicia Powell
+DOB: 05/27/1935
+MRN: MR-684194
+Collection Date: 07/04/2026
+Ordering Physician: Brandon Munoz
+Phone: +1-948-783-7550x375
+
+Test: Complete Blood Count (CBC).
+Results: WBC 6.8 (ref 4.0-11.0), Hgb 13.9 (ref 12.0-16.0), Platelets 250 (ref 150-400). All results within reference range.

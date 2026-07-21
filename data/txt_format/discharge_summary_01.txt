@@ -1,0 +1,16 @@
+DISCHARGE SUMMARY
+
+Patient: Mrs. Elena Rossi
+Date of Admission: 07/01/2026
+Date of Discharge: 07/09/2026
+
+Discharge Diagnosis: Acute exacerbation of COPD, resolved.
+
+Hospital Course: Patient was admitted with worsening dyspnea and was treated
+with IV steroids, nebulizer therapy, and supplemental oxygen. Improved
+steadily over 8 days. Account Number: ACCT-556213.
+
+Discharge Instructions: Continue home oxygen at 2L via nasal cannula.
+Follow up with primary care physician within 1 week. Contact: (555) 812-3345.
+
+Condition on Discharge: Stable, ambulatory.

@@ -1,0 +1,9 @@
+Patient Name: Alexandria Ward
+DOB: 08/05/1973
+MRN: MR-238394
+Specimen Date: 06/18/2026
+Pathologist: Laura Diaz
+Accession Number: ACC-33188838
+
+Specimen: Skin, left forearm, punch biopsy.
+Gross Description: Single tan-pink skin ellipse. Microscopic Description: Unremarkable epidermis and dermis. Diagnosis: Benign, no evidence of malignancy.

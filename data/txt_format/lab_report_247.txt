@@ -1,0 +1,9 @@
+Patient Name: Mitchell Johnson
+DOB: 06/29/1940
+MRN: MR-156904
+Collection Date: 05/29/2026
+Ordering Physician: Kristin Andrews
+Phone: 846.367.6650
+
+Test: Complete Blood Count (CBC).
+Results: WBC 6.8 (ref 4.0-11.0), Hgb 13.9 (ref 12.0-16.0), Platelets 250 (ref 150-400). All results within reference range.

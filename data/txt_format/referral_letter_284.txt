@@ -1,0 +1,10 @@
+Patient Name: Andre Rodriguez
+DOB: 08/08/1956
+Referring Physician: Kenneth Huff
+Receiving Physician: Kelly Miles
+Phone: 705-839-1037x170
+Date: 06/16/2026
+
+Dear Colleague,
+
+Thank you for agreeing to see this patient for specialist evaluation. Relevant history, current medications, and recent lab results are summarized below. Please let me know if you require additional information prior to the appointment.

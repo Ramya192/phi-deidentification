@@ -1,0 +1,9 @@
+Patient Name: Steven Ellis
+DOB: 01/29/1942
+MRN: MR-708982
+Specimen Date: 05/21/2026
+Pathologist: Mandy Foster
+Accession Number: ACC-89442904
+
+Specimen: Breast, right, core needle biopsy.
+Gross Description: Three cores of tan-white fibrofatty tissue, measuring 1.2 cm in aggregate length. Microscopic Description: Fibrocystic changes with no atypia identified. Diagnosis: Benign fibrocystic change.

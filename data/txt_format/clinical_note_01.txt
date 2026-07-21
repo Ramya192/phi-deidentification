@@ -1,0 +1,12 @@
+Chief Complaint: Patient Mr. John Carter presents with persistent cough and fever.
+
+History of Present Illness: 45-year-old male, DOB 03/14/1980, MRN: MR-88213,
+presents to clinic on 07/10/2026 with 3 days of productive cough, fever up to
+101.4F, and mild shortness of breath. Contact phone: (555) 234-9981. Email on
+file: john.carter@example.com.
+
+Vital Signs: BP 128/82, HR 92, Temp 101.2F, SpO2 96% on room air.
+
+Assessment and Plan: Likely community-acquired pneumonia. Started on
+azithromycin 500mg daily. Follow up with Dr. Priya Nair in 5 days. Referred to
+radiology for chest X-ray.

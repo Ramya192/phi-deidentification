@@ -1,0 +1,9 @@
+Patient Name: Matthew Greene
+DOB: 09/12/1957
+MRN: MR-201698
+Collection Date: 05/14/2026
+Ordering Physician: Mark Rowland
+Phone: 714.467.7418x6256
+
+Test: Complete Blood Count (CBC).
+Results: WBC 6.8 (ref 4.0-11.0), Hgb 13.9 (ref 12.0-16.0), Platelets 250 (ref 150-400). All results within reference range.

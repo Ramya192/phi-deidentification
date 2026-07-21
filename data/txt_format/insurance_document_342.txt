@@ -1,0 +1,13 @@
+Patient Name: Sara Ramirez
+Member ID: MBR-8182500
+Policy Number: POL-3356-L
+Claim Number: CLM-2026-39151
+Date of Service: 07/08/2026
+Phone: (890)860-0780
+
+Service Description: Diagnostic imaging, MRI without contrast.
+Amount Billed: $950.00
+Deductible Applied: $250.00
+Amount Paid by Plan: $700.00
+
+Questions about this claim? Call member services.

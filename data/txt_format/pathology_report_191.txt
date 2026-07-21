@@ -1,0 +1,9 @@
+Patient Name: Joseph Allen
+DOB: 06/27/1997
+MRN: MR-162804
+Specimen Date: 05/25/2026
+Pathologist: Anna Morse
+Accession Number: ACC-79760901
+
+Specimen: Skin, left forearm, punch biopsy.
+Gross Description: Single tan-pink skin ellipse. Microscopic Description: Unremarkable epidermis and dermis. Diagnosis: Benign, no evidence of malignancy.

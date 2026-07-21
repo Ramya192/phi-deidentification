@@ -1,0 +1,13 @@
+Patient Name: Christopher Patton
+Member ID: MBR-4962709
+Policy Number: POL-7280-v
+Claim Number: CLM-2026-21062
+Date of Service: 05/26/2026
+Phone: +1-627-366-3723x950
+
+Service Description: Office visit, established patient, moderate complexity.
+Amount Billed: $185.00
+Copay: $25.00
+Amount Paid by Plan: $160.00
+
+Questions about this claim? Call member services.

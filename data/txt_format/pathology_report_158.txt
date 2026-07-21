@@ -1,0 +1,9 @@
+Patient Name: Cynthia Cochran
+DOB: 07/16/2010
+MRN: MR-822608
+Specimen Date: 06/15/2026
+Pathologist: Lisa Patterson
+Accession Number: ACC-92698414
+
+Specimen: Skin, left forearm, punch biopsy.
+Gross Description: Single tan-pink skin ellipse. Microscopic Description: Unremarkable epidermis and dermis. Diagnosis: Benign, no evidence of malignancy.

@@ -1,0 +1,9 @@
+Patient Name: Michael Blair
+DOB: 01/01/1963
+MRN: MR-160718
+Specimen Date: 06/04/2026
+Pathologist: Jeffrey Chavez
+Accession Number: ACC-91716102
+
+Specimen: Breast, right, core needle biopsy.
+Gross Description: Three cores of tan-white fibrofatty tissue, measuring 1.2 cm in aggregate length. Microscopic Description: Fibrocystic changes with no atypia identified. Diagnosis: Benign fibrocystic change.

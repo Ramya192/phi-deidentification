@@ -1,0 +1,13 @@
+Patient Name: Miguel Rodriguez
+Member ID: MBR-2189907
+Policy Number: POL-4876-L
+Claim Number: CLM-2026-64190
+Date of Service: 06/04/2026
+Phone: +1-738-527-6153x966
+
+Service Description: Office visit, established patient, moderate complexity.
+Amount Billed: $185.00
+Copay: $25.00
+Amount Paid by Plan: $160.00
+
+Questions about this claim? Call member services.

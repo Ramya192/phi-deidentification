@@ -1,0 +1,9 @@
+Patient Name: Mario Barber
+DOB: 05/23/1962
+MRN: MR-550081
+Specimen Date: 05/20/2026
+Pathologist: April Woods
+Accession Number: ACC-27810664
+
+Specimen: Breast, right, core needle biopsy.
+Gross Description: Three cores of tan-white fibrofatty tissue, measuring 1.2 cm in aggregate length. Microscopic Description: Fibrocystic changes with no atypia identified. Diagnosis: Benign fibrocystic change.

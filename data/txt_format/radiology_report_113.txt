@@ -1,0 +1,8 @@
+Patient Name: Kirk Griffin
+DOB: 12/26/2021
+MRN: MR-837449
+Exam Date: 05/16/2026
+Referring Physician: Andrew Gonzales
+Radiologist: Nicole Parsons
+
+EXAM:,  Skull, complete, five images,HISTORY:,  Plagiocephaly.,TECHNIQUE: , Multiple images of the skull were evaluated.  There are no priors for comparison.,FINDINGS: , Multiple images of the skull were evaluated and they reveal radiographic visualization of the cranial sutures without evidence of closure.  There is no evidence of any craniosynostosis.  There is no radiographic evidence of plagiocephaly.,IMPRESSION: , No evidence of craniosynostosis or radiographic characteristics for plagiocephaly.

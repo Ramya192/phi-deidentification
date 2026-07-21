@@ -1,0 +1,13 @@
+Patient Name: Alec Meadows DDS
+Member ID: MBR-5071537
+Policy Number: POL-2020-t
+Claim Number: CLM-2026-22752
+Date of Service: 06/25/2026
+Phone: +1-829-711-1799x313
+
+Service Description: Office visit, established patient, moderate complexity.
+Amount Billed: $185.00
+Copay: $25.00
+Amount Paid by Plan: $160.00
+
+Questions about this claim? Call member services.

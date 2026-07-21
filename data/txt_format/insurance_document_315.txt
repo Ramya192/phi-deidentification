@@ -1,0 +1,13 @@
+Patient Name: Danny Callahan
+Member ID: MBR-5329406
+Policy Number: POL-5625-Y
+Claim Number: CLM-2026-52567
+Date of Service: 06/25/2026
+Phone: 401.371.5772x4599
+
+Service Description: Diagnostic imaging, MRI without contrast.
+Amount Billed: $950.00
+Deductible Applied: $250.00
+Amount Paid by Plan: $700.00
+
+Questions about this claim? Call member services.

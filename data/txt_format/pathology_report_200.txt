@@ -1,0 +1,9 @@
+Patient Name: Sandra Rivera
+DOB: 05/02/1936
+MRN: MR-583388
+Specimen Date: 05/16/2026
+Pathologist: Kenneth Underwood
+Accession Number: ACC-63015826
+
+Specimen: Skin, left forearm, punch biopsy.
+Gross Description: Single tan-pink skin ellipse. Microscopic Description: Unremarkable epidermis and dermis. Diagnosis: Benign, no evidence of malignancy.

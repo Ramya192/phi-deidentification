@@ -1,0 +1,9 @@
+Patient Name: Jordan Williams
+DOB: 03/12/1932
+MRN: MR-356430
+Specimen Date: 05/16/2026
+Pathologist: James Hernandez
+Accession Number: ACC-14746418
+
+Specimen: Skin, left forearm, punch biopsy.
+Gross Description: Single tan-pink skin ellipse. Microscopic Description: Unremarkable epidermis and dermis. Diagnosis: Benign, no evidence of malignancy.

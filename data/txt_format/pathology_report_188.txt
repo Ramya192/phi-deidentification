@@ -1,0 +1,9 @@
+Patient Name: Sharon Ayala
+DOB: 10/22/1972
+MRN: MR-443199
+Specimen Date: 05/20/2026
+Pathologist: Aimee Gonzalez
+Accession Number: ACC-85672859
+
+Specimen: Skin, left forearm, punch biopsy.
+Gross Description: Single tan-pink skin ellipse. Microscopic Description: Unremarkable epidermis and dermis. Diagnosis: Benign, no evidence of malignancy.

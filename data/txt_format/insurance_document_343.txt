@@ -1,0 +1,13 @@
+Patient Name: Robert Nicholson
+Member ID: MBR-8590706
+Policy Number: POL-7318-W
+Claim Number: CLM-2026-11628
+Date of Service: 06/20/2026
+Phone: 425.943.1074
+
+Service Description: Office visit, established patient, moderate complexity.
+Amount Billed: $185.00
+Copay: $25.00
+Amount Paid by Plan: $160.00
+
+Questions about this claim? Call member services.

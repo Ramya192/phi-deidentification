@@ -1,0 +1,9 @@
+Patient Name: Susan Khan MD
+DOB: 10/26/1967
+MRN: MR-197874
+Specimen Date: 06/15/2026
+Pathologist: Jacob Mckee
+Accession Number: ACC-32216400
+
+Specimen: Skin, left forearm, punch biopsy.
+Gross Description: Single tan-pink skin ellipse. Microscopic Description: Unremarkable epidermis and dermis. Diagnosis: Benign, no evidence of malignancy.

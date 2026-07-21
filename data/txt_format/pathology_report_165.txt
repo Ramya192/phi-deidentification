@@ -1,0 +1,9 @@
+Patient Name: Frank Campbell MD
+DOB: 04/18/1948
+MRN: MR-693643
+Specimen Date: 06/28/2026
+Pathologist: Stephanie Farmer
+Accession Number: ACC-16166355
+
+Specimen: Breast, right, core needle biopsy.
+Gross Description: Three cores of tan-white fibrofatty tissue, measuring 1.2 cm in aggregate length. Microscopic Description: Fibrocystic changes with no atypia identified. Diagnosis: Benign fibrocystic change.

@@ -1,0 +1,13 @@
+Patient Name: Katherine Robinson
+Member ID: MBR-8981122
+Policy Number: POL-7671-M
+Claim Number: CLM-2026-88656
+Date of Service: 05/12/2026
+Phone: 284.798.3022
+
+Service Description: Diagnostic imaging, MRI without contrast.
+Amount Billed: $950.00
+Deductible Applied: $250.00
+Amount Paid by Plan: $700.00
+
+Questions about this claim? Call member services.

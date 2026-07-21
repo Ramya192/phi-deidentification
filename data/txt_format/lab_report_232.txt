@@ -1,0 +1,9 @@
+Patient Name: Mariah Robles
+DOB: 11/29/1945
+MRN: MR-238948
+Collection Date: 05/17/2026
+Ordering Physician: Dr. Ashley Pruitt
+Phone: 897.929.6590x2771
+
+Test: Complete Blood Count (CBC).
+Results: WBC 6.8 (ref 4.0-11.0), Hgb 13.9 (ref 12.0-16.0), Platelets 250 (ref 150-400). All results within reference range.

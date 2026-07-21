@@ -1,0 +1,10 @@
+Patient Name: Danielle Scott
+DOB: 05/25/1971
+Referring Physician: James Hardin
+Receiving Physician: Misty Mcguire
+Phone: (379)219-4096
+Date: 06/13/2026
+
+Dear Doctor,
+
+I am writing to request a consultation for this patient regarding findings noted on recent imaging. A summary of the clinical picture and relevant history is enclosed. I would appreciate your assessment at your earliest convenience.
