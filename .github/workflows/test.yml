@@ -1,0 +1,40 @@
+name: Tests
+
+# CI/CD for the multi-agent pipeline (Topic 15: "Version control and CI/CD
+# for multi-agent pipelines"). Deliberately does NOT install Presidio +
+# en_core_web_lg here -- that's a large, slow download, and the test suite
+# (tests/test_integration.py) already pins PHIDetectionAgent to the
+# dependency-free regex fallback for every test that needs deterministic
+# control-flow behavior (see force_fallback_detector in that file), so CI
+# doesn't need the heavy NLP stack to meaningfully test graph wiring,
+# routing, the retry loop, or the interrupt()/resume human-review cycle.
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies (excluding heavy NLP stack)
+        run: |
+          python -m pip install --upgrade pip
+          # Install everything except spaCy/Presidio/the LLM SDK -- the
+          # test suite runs entirely on the regex fallback backend and
+          # doesn't call OpenAI, so none of those are needed for CI.
+          grep -vE "^(spacy|presidio|openai|en_core_web)" requirements.txt > requirements-ci.txt || true
+          pip install -r requirements-ci.txt
+
+      - name: Run tests
+        run: pytest -v

@@ -1,0 +1,14 @@
+[theme]
+# Pinned explicitly rather than left to auto-detection: app/streamlit_app.py
+# injects custom CSS that assumes a light theme (white sidebar, light page
+# background, dark navy accents) but never overrides text color. Without
+# this file, Streamlit auto-picks light/dark based on the visitor's OS/
+# browser preference -- on a dark-mode browser that meant white text landing
+# on the CSS's white backgrounds, making most of the app unreadable (blank-
+# looking sidebar, invisible button labels). Pinning base="light" here makes
+# the app look the same for every visitor regardless of their system theme.
+base = "light"
+primaryColor = "#1F4E79"
+backgroundColor = "#F6F8FA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#1A1A1A"

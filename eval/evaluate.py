@@ -72,12 +72,16 @@ def _spans_overlap(a_start: int, a_end: int, b_start: int, b_end: int) -> bool:
     return a_start < b_end and a_end > b_start
 
 
-def _match_same_type_spans(gold: list[dict], pred: list[dict], mode: str) -> tuple[int, int, int]:
+def _match_same_type_spans(gold: list[dict], pred: list[dict], mode: str) -> tuple[int, int, int, list[dict], list[dict]]:
     """Greedy matching between gold and predicted spans of a SINGLE phi_type
     (caller pre-filters by type). Each predicted span is used at most once,
     so a document with 3 gold PERSON spans and 5 predicted PERSON spans
-    can't inflate TP past 3. Returns (tp, fp, fn)."""
+    can't inflate TP past 3. Returns (tp, fp, fn, fp_spans, fn_spans) --
+    the last two are the actual unmatched span objects (not just counts),
+    which is what error_analysis.py needs to show real examples rather
+    than just aggregate numbers."""
     unmatched_pred_idx = list(range(len(pred)))
+    unmatched_gold: list[dict] = []
     tp = 0
     for g in sorted(gold, key=lambda s: s["start"]):
         chosen = None
@@ -93,17 +97,19 @@ def _match_same_type_spans(gold: list[dict], pred: list[dict], mode: str) -> tup
         if chosen is not None:
             tp += 1
             unmatched_pred_idx.remove(chosen)
-    fp = len(unmatched_pred_idx)
-    fn = len(gold) - tp
-    return tp, fp, fn
+        else:
+            unmatched_gold.append(g)
+    fp_spans = [pred[idx] for idx in unmatched_pred_idx]
+    fn_spans = unmatched_gold
+    return tp, len(fp_spans), len(fn_spans), fp_spans, fn_spans
 
 
-def evaluate_document(gold_spans: list[dict], pred_spans: list[dict], mode: str) -> dict[str, tuple[int, int, int]]:
-    """Returns {phi_type: (tp, fp, fn)} for one document, evaluated
-    per-type so a wrong-type prediction can't accidentally count as a
-    match for the type it wasn't."""
+def evaluate_document(gold_spans: list[dict], pred_spans: list[dict], mode: str) -> dict[str, tuple[int, int, int, list[dict], list[dict]]]:
+    """Returns {phi_type: (tp, fp, fn, fp_spans, fn_spans)} for one
+    document, evaluated per-type so a wrong-type prediction can't
+    accidentally count as a match for the type it wasn't."""
     types = {s["phi_type"] for s in gold_spans} | {s["phi_type"] for s in pred_spans}
-    per_type: dict[str, tuple[int, int, int]] = {}
+    per_type: dict[str, tuple[int, int, int, list[dict], list[dict]]] = {}
     for t in types:
         g = [s for s in gold_spans if s["phi_type"] == t]
         p = [s for s in pred_spans if s["phi_type"] == t]
@@ -121,7 +127,7 @@ def _prf1(tp: int, fp: int, fn: int) -> tuple[float, float, float]:
 # ---------------------------------------------------------------------------
 # Main eval run
 # ---------------------------------------------------------------------------
-def run_eval(dataset_dir: str, backend: str) -> dict:
+def run_eval(dataset_dir: str, backend: str, human_review: bool = True) -> dict:
     gt_path = os.path.join(dataset_dir, "ground_truth.json")
     if not os.path.exists(gt_path):
         raise FileNotFoundError(
@@ -169,18 +175,52 @@ def run_eval(dataset_dir: str, backend: str) -> dict:
 
             state = {"raw_text": raw_text, "retry_count": 0, "audit_log": []}
             result = phi_detection_agent(state)
-            pred_spans = result["phi_spans"]
+            # ABLATION: human_review=True (default) scores every detected
+            # span (result["phi_spans"] = high + low confidence combined),
+            # which implicitly assumes HumanReviewAgent correctly approves
+            # every genuine low-confidence PHI span it's shown -- i.e. a
+            # perfect human reviewer. human_review=False scores ONLY
+            # result["high_confidence_spans"]: what the system would catch
+            # if the low-confidence spans were never routed to a human at
+            # all and were simply left un-redacted. The gap between the two
+            # runs is exactly what the human review step is worth -- see
+            # eval/ablation_study.py.
+            pred_spans = result["phi_spans"] if human_review else result["high_confidence_spans"]
             gold_spans = meta["phi_spans"]
 
             doc_result = {"filename": filename, "doc_type": meta["doc_type"]}
             for mode in ("strict", "overlap"):
                 per_type = evaluate_document(gold_spans, pred_spans, mode)
-                for phi_type, (tp, fp, fn) in per_type.items():
+                for phi_type, (tp, fp, fn, fp_spans, fn_spans) in per_type.items():
                     bucket = totals[mode][phi_type]
                     bucket[0] += tp
                     bucket[1] += fp
                     bucket[2] += fn
-                doc_result[mode] = {t: list(v) for t, v in per_type.items()}
+                # Only OVERLAP mode's span-level FP/FN detail is kept for
+                # error_analysis.py -- STRICT mode's exact-boundary FPs are
+                # dominated by the label-vs-value boundary convention
+                # difference already documented (README/report Section
+                # 3.3), which isn't an interesting "why did detection fail"
+                # story on its own.
+                doc_result[mode] = {t: [tp, fp, fn] for t, (tp, fp, fn, _fp_s, _fn_s) in per_type.items()}
+                if mode == "overlap":
+                    def _with_context(s: dict) -> dict:
+                        # +/- 60 chars of surrounding raw_text -- enough to
+                        # see what the detector actually matched and why,
+                        # without dumping the whole document into every
+                        # sampled example. Needed because guessing root
+                        # cause from (phi_type, matched text) alone proved
+                        # unreliable in practice -- see error_analysis.py.
+                        start, end = s["start"], s["end"]
+                        ctx_start, ctx_end = max(0, start - 60), min(len(raw_text), end + 60)
+                        return {**s, "context": raw_text[ctx_start:start] + "[[" + raw_text[start:end] + "]]" + raw_text[end:ctx_end]}
+
+                    doc_result["fp_spans"] = [
+                        {**_with_context(s), "phi_type": t} for t, (_tp, _fp, _fn, fp_s, _fn_s) in per_type.items() for s in fp_s
+                    ]
+                    doc_result["fn_spans"] = [
+                        {**_with_context(s), "phi_type": t} for t, (_tp, _fp, _fn, _fp_s, fn_s) in per_type.items() for s in fn_s
+                    ]
             per_doc_results.append(doc_result)
             docs_evaluated += 1
     finally:
@@ -274,9 +314,13 @@ def main():
     parser.add_argument("--backend", type=str, default="auto", choices=["auto", "fallback", "presidio"],
                          help="Force a specific PHIDetectionAgent backend (default: whatever's installed)")
     parser.add_argument("--output-dir", type=str, default=THIS_DIR, help="Where to write final_results.csv/.json")
+    parser.add_argument("--no-human-review", action="store_true",
+                         help="Ablation: score only high_confidence_spans, as if low-confidence "
+                              "spans were never routed to HumanReviewAgent at all. See "
+                              "eval/ablation_study.py for the paired on/off comparison.")
     args = parser.parse_args()
 
-    eval_result = run_eval(dataset_dir=args.dataset_dir, backend=args.backend)
+    eval_result = run_eval(dataset_dir=args.dataset_dir, backend=args.backend, human_review=not args.no_human_review)
     print_report(eval_result)
     write_outputs(eval_result, args.output_dir)
 

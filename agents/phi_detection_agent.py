@@ -17,6 +17,7 @@ agnostic to which backend actually ran.
 """
 from __future__ import annotations
 
+import os
 import re
 from datetime import datetime, timezone
 
@@ -53,6 +54,15 @@ CONFIDENCE_THRESHOLDS: dict[str, float] = {
     "CLAIM_NUMBER": 0.6,
     "EMAIL_ADDRESS": 0.6,
     "SSN": 0.6,
+    # The regex fallback backend emits this type as "SSN" (see
+    # _FALLBACK_PATTERNS below), but Presidio's built-in UsSsnRecognizer
+    # reports its actual supported_entity as "US_SSN" -- without this
+    # second key, _threshold_for("US_SSN") missed the dict entirely and
+    # silently fell back to HIGH_CONFIDENCE_THRESHOLD (0.7) instead of the
+    # intended 0.6, on the Presidio backend only. Found while verifying
+    # UsSsnRecognizer's real scores directly against the installed
+    # package (its weak patterns score as low as 0.05), not by guessing.
+    "US_SSN": 0.6,
     "IP_ADDRESS": 0.6,
     "URL": 0.6,
     "FAX_NUMBER": 0.6,
@@ -221,7 +231,44 @@ _analyzer = None
 def _get_analyzer():
     global _analyzer
     if _analyzer is None:
-        _analyzer = AnalyzerEngine()
+        # Presidio's own bare AnalyzerEngine() default expects en_core_web_lg,
+        # which is what every eval number in the report was produced with --
+        # kept as the default here for that reason. PHI_DEID_SPACY_MODEL lets
+        # a resource-constrained deployment (e.g. Streamlit Community Cloud's
+        # 1GB RAM cap, too tight for lg alongside two running web servers)
+        # opt into the much smaller en_core_web_sm instead, at a real but
+        # documented accuracy cost (see README/report "Live demo" notes).
+        spacy_model = os.environ.get("PHI_DEID_SPACY_MODEL", "en_core_web_lg")
+        if spacy_model == "en_core_web_lg":
+            _analyzer = AnalyzerEngine()
+        else:
+            from presidio_analyzer.nlp_engine import NlpEngineProvider
+
+            provider = NlpEngineProvider(nlp_configuration={
+                "nlp_engine_name": "spacy",
+                "models": [{"lang_code": "en", "model_name": spacy_model}],
+            })
+            _analyzer = AnalyzerEngine(nlp_engine=provider.create_engine())
+
+        # Presidio's built-in US_DRIVER_LICENSE recognizer (UsLicenseRecognizer)
+        # ships a pattern its own docstring calls "weak" (score 0.3): one of
+        # its alternatives is bare [A-Z][0-9]{1,12}, which matches almost any
+        # single letter followed by digits. Found live via the Streamlit UI:
+        # on a radiology report it fired repeatedly on ordinary vertebral-level
+        # references -- "L2", "L3", "L4", "C7", "T12" -- none of which are
+        # driver's license numbers. Confirmed directly against the installed
+        # recognizer's own regex, not guessed: every one of those levels
+        # matches. None of this project's 7 document types carry a driver's
+        # license field (see scripts/build_sample_dataset.py _FIELD_SETS), so
+        # this recognizer is pure noise here -- the same "reviewer fatigue
+        # with no real safety benefit" this file's CONFIDENCE_THRESHOLDS
+        # comment already warns about, just caused by an over-broad detector
+        # instead of a low threshold. Deregistered rather than
+        # threshold-tuned: at 0.3 confidence it's already always routed to
+        # human review under every threshold in this file, so raising its
+        # threshold further wouldn't change anything -- the fix has to be not
+        # generating the candidate at all.
+        _analyzer.registry.remove_recognizer("UsLicenseRecognizer")
 
         # Clinical-specific custom recognizers on top of Presidio's built-ins
         # (PERSON, DATE_TIME, PHONE_NUMBER, EMAIL_ADDRESS, US_SSN, LOCATION, ...)
@@ -322,10 +369,51 @@ def _get_analyzer():
             )],
             context=["phone", "tel", "call", "fax"],
         )
+        # Found via eval/error_analysis.py against real output, not assumed:
+        # 5/5 sampled PERSON false negatives on the Presidio backend were
+        # all names sitting directly after a role/label header
+        # ("Patient Name: Brian York", "Referring Physician: Autumn Key",
+        # "Pathologist: Virginia Henderson", ...) with zero surrounding
+        # sentence context. The names themselves are ordinary, common
+        # American names (Brian York, Tiffany Barnes, Chad May) -- not
+        # rare/unusual ones -- ruling out "NER doesn't know this name" as
+        # the explanation. spaCy's general-purpose PERSON model is trained
+        # mostly on prose and appears to specifically underperform on bare
+        # "Label: Name" header lines, which have none of the sentence
+        # structure (articles, verbs) it normally relies on. This
+        # recognizer directly targets that gap using the exact label
+        # vocabulary scripts/build_sample_dataset.py injects, mirroring
+        # the MRN/accession recognizers' approach.
+        #
+        # No capture group used -- like mrn_recognizer/accession_recognizer
+        # above, the WHOLE match (label + name) becomes the span, not just
+        # the name (Presidio's PatternRecognizer uses the full regex match
+        # span, group 0, regardless of internal groups). This means the
+        # redaction swallows the label along with the name, same
+        # label-vs-value boundary convention already documented for the
+        # other custom recognizers (see README/report "boundary convention
+        # difference" note) -- deliberately consistent, not a new
+        # side-effect. Confidence 0.8 (matches PERSON's high-confidence
+        # threshold): a "<clinical role label>: <Capitalized Name>" match
+        # is a strong, low-ambiguity signal.
+        header_person_recognizer = PatternRecognizer(
+            supported_entity="PERSON",
+            patterns=[Pattern(
+                name="header_label_person_pattern",
+                regex=(
+                    r"\b(?:Patient Name|Provider|Referring Physician|Receiving Physician|"
+                    r"Ordering Physician|Radiologist|Pathologist|Physician|Attending|"
+                    r"Reviewed[- ]by|Signed[- ]by)\s*:\s*"
+                    r"[A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+\b"
+                ),
+                score=0.8,
+            )],
+            context=["patient", "physician", "provider", "radiologist", "pathologist"],
+        )
         for recognizer in (
             mrn_recognizer, health_plan_recognizer, account_recognizer,
             accession_recognizer, claim_recognizer, fax_recognizer,
-            phone_ext_recognizer,
+            phone_ext_recognizer, header_person_recognizer,
         ):
             _analyzer.registry.add_recognizer(recognizer)
     return _analyzer
@@ -413,9 +501,18 @@ def phi_detection_agent(state: GraphState) -> GraphState:
             "notes": f"backend={backend_used}",
         })
 
+    # Cumulative across every pass this run has done so far -- see
+    # GraphState.all_detected_spans. `spans` above is just this pass's
+    # findings (the whole current-redacted_text-only residual scan on a
+    # retry); this appends rather than replaces, so nothing found and
+    # already redacted in an earlier pass silently disappears from the
+    # run's own bookkeeping.
+    all_detected_spans = list(state.get("all_detected_spans", [])) + spans
+
     return {
         **state,
         "phi_spans": spans,
+        "all_detected_spans": all_detected_spans,
         "confidence_scores": confidence_scores,
         "high_confidence_spans": high,
         "low_confidence_spans": low,

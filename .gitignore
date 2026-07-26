@@ -5,4 +5,27 @@ venv/
 .env
 *.egg-info/
 .pytest_cache/
+
+# LangGraph checkpoint DB and its WAL/SHM siblings (recreated automatically
+# on next startup -- see README's SQLite corruption troubleshooting note)
 data/checkpoints.sqlite
+data/checkpoints.sqlite-wal
+data/checkpoints.sqlite-shm
+
+# Persistent audit trail DB (storage/audit_store.py) and any scratch/test
+# databases created during local debugging -- none of these should ship
+# with the repo.
+data/audit.sqlite
+data/audit*.sqlite*
+data/scratch*.sqlite*
+data/plain_test.txt
+
+# Office lock files (created while a .docx/.pptx is open in Word/PowerPoint)
+~$*.docx
+~$*.pptx
+~$*.xlsx
+
+# FUSE/mount artifacts from cross-platform file bridges -- never meaningful
+# content, safe to ignore wherever they appear
+.fuse_hidden*
+data/.fuse_hidden*

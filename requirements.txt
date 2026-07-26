@@ -15,10 +15,25 @@ python-docx>=1.1.0
 fpdf2>=2.7.0
 streamlit>=1.35.0
 requests>=2.31.0
+openai>=1.30.0  # optional: only needed if PHI_DEID_CLASSIFICATION_BACKEND=llm
+python-dotenv>=1.0.0  # loads .env locally; harmless no-op if no .env file exists
+sqlalchemy>=2.0.0  # storage/audit_store.py -- persistent, queryable audit trail
+langsmith>=0.1.0  # optional: only used if LANGCHAIN_API_KEY is set (see tracing.py)
+langchain-openai>=0.2.0  # optional: only needed if PHI_DEID_ADJUDICATION_BACKEND=llm (agents/llm_adjudication_agent.py)
 
-# After installing, download the spaCy model Presidio's default NLP engine uses:
+# en_core_web_sm as a direct pip-installable wheel: this is what the
+# Streamlit Community Cloud live demo runs (PHI_DEID_SPACY_MODEL=en_core_web_sm),
+# since Streamlit Cloud only executes this requirements.txt and has no build
+# step to run `spacy download`. It's also small enough to fit the platform's
+# 1GB RAM cap alongside two web server processes. Local dev / Docker still
+# default to en_core_web_lg (see below) -- this line is additive, not a
+# replacement.
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+
+# After installing, download the larger spaCy model Presidio's default NLP
+# engine uses (and that every eval number in the report was produced with):
 #   python -m spacy download en_core_web_lg
-# (en_core_web_sm also works and is much smaller/faster if en_core_web_lg
+# (en_core_web_sm above also works and is much smaller/faster if en_core_web_lg
 # download is impractical on your machine — accuracy trade-off only.)
 #
 # Optional, for the scispaCy upgrade path referenced in the workflow diagram:

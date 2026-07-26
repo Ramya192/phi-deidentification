@@ -1,29 +1,68 @@
----
-title: PHI De-identification & Compliance Workflow
-emoji: 🏥
-colorFrom: blue
-colorTo: green
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 # PHI De-identification & Compliance Workflow
 
 LangGraph multi-agent pipeline that classifies uploaded health documents,
 detects PHI, redacts it, validates the redaction, and produces an audit
 trail + compliance report.
 
-**GitHub repository:** `[FILL IN — paste the repo URL after pushing]`
-**Live demo (Hugging Face Space):** `[FILL IN — paste the Space URL after it finishes building]`
+**GitHub repository:** [github.com/Ramya192/phi-deidentification](https://github.com/Ramya192/phi-deidentification)
+**Live demo (Streamlit Community Cloud):** `[FILL IN — paste the app URL after it finishes deploying]`
 
-The live demo runs the exact same FastAPI + Streamlit architecture
-described below in a single Hugging Face Space container — see
-`Dockerfile` and `start.sh`. No account or API key entry is required to
-try it: the API key is pre-configured as a Space secret and the Streamlit
-sidebar picks it up automatically.
+The live demo runs the same FastAPI + Streamlit architecture described
+below in a single process — `app/streamlit_app.py` starts the FastAPI
+backend itself in a background thread when `PHI_DEID_EMBED_API=1` (see
+"Deployment" below). No account or API key entry is required to try it:
+the API key is pre-configured as a Streamlit secret and the sidebar picks
+it up automatically. Note: the live demo runs on `en_core_web_sm` rather
+than the `en_core_web_lg` model used to produce every number in Section 5
+below (Streamlit Community Cloud's 1GB RAM cap can't fit the larger model
+alongside two web server processes) — expect somewhat lower PERSON/DATE_TIME
+recall live than the report's measured numbers. Run it locally with the
+default settings to reproduce the reported numbers exactly.
+
+A `Dockerfile` + `start.sh` are also included for single-container
+deployment (e.g. Hugging Face Spaces, Docker SDK) as an alternative path —
+see the comments in those two files. That path was not used for the live
+demo link above because Hugging Face now gates Docker Spaces behind a
+payment method on file, which Streamlit Community Cloud does not require.
 
 ## Architecture
+
+```mermaid
+flowchart TD
+    U(["📄 Upload<br/>.txt / .pdf / .docx"]) --> ING["Document Ingestion<br/><small>extracts raw text — not a graph node</small>"]
+    ING --> CLS["🧭 ClassificationAgent<br/><small>routes into 7 clinical doc types</small>"]
+    CLS -- not_applicable --> END1(["END"])
+    CLS -- clinical document --> DET["🔍 PHIDetectionAgent<br/><small>Presidio + custom recognizers,<br/>regex fallback</small>"]
+    DET --> VAL["✅ PHIValidationAgent<br/><small>schema/completeness check</small>"]
+    VAL --> ADJ["🤖 LLMAdjudicationAgent<br/><small>optional, off by default</small>"]
+    ADJ -- high confidence --> RED["✂️ RedactionAgent"]
+    ADJ -- low confidence --> HR{{"🙋 HumanReviewAgent<br/><small>interrupt() / resume</small>"}}
+    HR --> RED
+    RED --> CV["📋 ComplianceValidationAgent<br/><small>per-category checks + score</small>"]
+    CV -- PASS --> AR["🗂️ AuditReportAgent"]
+    CV -- "FAIL, retries left" --> DET
+    CV -- "FAIL, retries exhausted" --> ESC["⚠️ escalate_to_review<br/><small>auto-redacts deterministic types</small>"]
+    ESC --> ERV["escalation_review_agent<br/><small>one-shot human review</small>"]
+    ERV --> ERD["escalation_redaction_agent"]
+    ERD --> AR
+    AR --> END2(["END"])
+
+    classDef entry fill:#e8f0fe,stroke:#1a73e8,stroke-width:1.5px,color:#1a237e
+    classDef agent fill:#d1ecf1,stroke:#0c5460,stroke-width:1.5px,color:#0c5460
+    classDef human fill:#fdecea,stroke:#c0392b,stroke-width:1.5px,color:#7b241c
+    classDef action fill:#d4edda,stroke:#1e7e34,stroke-width:1.5px,color:#1e5e28
+    classDef optional fill:#eee5f8,stroke:#5b3a8e,stroke-width:1.5px,color:#4b2e70
+    classDef terminal fill:#f1f3f4,stroke:#5f6368,stroke-width:1.5px,color:#3c4043
+
+    class U,ING entry
+    class CLS,DET,VAL,CV agent
+    class ADJ optional
+    class HR,ESC,ERV human
+    class RED,AR,ERD action
+    class END1,END2 terminal
+```
+
+Text-equivalent walk-through, for reference:
 
 ```
 Upload (.txt / .pdf / .docx)
@@ -34,12 +73,24 @@ Upload (.txt / .pdf / .docx)
   -> PHIDetectionAgent             (Presidio + custom clinical recognizers;
                                     regex fallback if Presidio/spaCy aren't
                                     installed)
+  -> PHIValidationAgent            (schema/completeness check — did detection
+                                    find every identifier type this doc type
+                                    is expected to have?)
+  -> LLMAdjudicationAgent          (agentic tier — no-op unless
+                                    PHI_DEID_ADJUDICATION_BACKEND=llm; when on,
+                                    reviews only the low-confidence spans and
+                                    can confirm/reject/defer to a human)
   -> [confidence >= per-type threshold]  -> RedactionAgent
   -> [confidence <  per-type threshold]  -> HumanReviewAgent (LangGraph interrupt()) -> RedactionAgent
-  -> ComplianceValidationAgent     (re-scans redacted text)
+  -> ComplianceValidationAgent     (re-scans redacted text; per-category
+                                    compliance_checks + compliance_score)
   -> [PASS]                -> AuditReportAgent -> END
   -> [FAIL, retries left]  -> loop back to PHIDetectionAgent (max 2 retries)
-  -> [FAIL, retries exhausted] -> AuditReportAgent -> END (flagged for manual follow-up)
+  -> [FAIL, retries exhausted] -> escalate_to_review (auto-redacts
+                                    deterministic PHI types, routes only
+                                    genuinely ambiguous types to a one-shot
+                                    escalation_review_agent) -> escalation_redaction_agent
+                                    -> AuditReportAgent -> END
 ```
 
 Both confidence branches converge at `RedactionAgent` before validation —
@@ -47,6 +98,10 @@ human review decides *whether* a low-confidence span is real PHI;
 redaction is what actually masks it. This is deliberate: skipping
 redaction after human review would leave approved-as-PHI spans
 un-redacted going into compliance validation.
+
+Every completed run is also persisted to a separate, append-only audit
+store (`storage/audit_store.py`, SQLAlchemy, default SQLite) — see
+"Persistent audit trail" below.
 
 Document ingestion (file -> raw text) happens **before** the graph, not
 as a graph node. `GraphState` (`graph/state.py`) is checkpointed (SQLite
@@ -69,9 +124,242 @@ simple. See "File upload / ingestion" below.
 - insurance_document
 
 Routing uses weighted keyword/phrase heuristics (`classify_with_heuristic`
-in `agents/classification_agent.py`) so it runs with zero API keys. Swap
-in `classify_with_llm` (stubbed, ready for GPT-4o-mini via LangChain) for
-higher accuracy once you have API access.
+in `agents/classification_agent.py`) by default — zero API keys needed.
+Set `PHI_DEID_CLASSIFICATION_BACKEND=llm` and `OPENAI_API_KEY` to switch to
+`classify_with_llm`: a real GPT-4o-mini call with a small retrieval step
+(few-shot examples picked by embedding similarity — see "Retrieval-augmented
+classification" below) for higher accuracy. Falls back to the heuristic
+automatically on any failure (missing key, network error, malformed
+response), so this is safe to enable without risking the pipeline.
+
+## Agent roles and collaboration topology
+
+Mapping this project's nodes onto the standard agent-role vocabulary
+(planner / executor / critic / verifier):
+
+| Node | Role | Notes |
+|---|---|---|
+| ClassificationAgent | Planner | Decides which path the document takes through the rest of the graph |
+| PHIDetectionAgent | Executor (perception) | Produces the candidate PHI spans everything downstream acts on |
+| PHIValidationAgent | Verifier (completeness) | Checks whether detection found every identifier type this document type is expected to have — a schema check, not a redaction decision |
+| LLMAdjudicationAgent | Critic (optional, LLM-backed) | No-op unless `PHI_DEID_ADJUDICATION_BACKEND=llm`; when enabled, reviews only the spans `PHIDetectionAgent` couldn't confidently resolve, using tool-calling (`search_document`) plus a structured decision (Pydantic `AdjudicationDecision`) to confirm, reject, or defer to a human — see "LLM adjudication agent" below |
+| HumanReviewAgent | Critic (human-in-the-loop) | Vets the executor's low-confidence calls before they're acted on |
+| RedactionAgent | Executor (action) | Applies the approved decisions to the document |
+| ComplianceValidationAgent | Verifier | Independently re-checks the executor's output before it's accepted; also produces per-category `compliance_checks` + a `compliance_score` |
+| AuditReportAgent | Reporter | Terminal node — assembles the record of what happened, not a decision-maker |
+
+`LLMAdjudicationAgent` is the one node in this project where an LLM
+participates in a genuinely agentic way (bind_tools + structured output),
+as opposed to `classify_with_llm()`'s single-shot classification call. Both
+are optional and off by default — see "LLM classification (optional)" and
+"LLM adjudication agent" below for why the deterministic detection,
+schema-validation, and redaction layers deliberately stay LLM-free while
+this one node doesn't.
+
+**Collaboration topology:** this is a **hierarchical pipeline with a
+human-in-the-loop debate step**, not a peer-to-peer or blackboard system.
+A single orchestrator (`graph/workflow.py`'s `StateGraph`) owns the
+sequence and every conditional branch; agents don't communicate with each
+other directly or negotiate — they read/write a shared `GraphState` object
+the orchestrator passes along. `HumanReviewAgent` is the one place this
+isn't strictly linear: it's a genuine debate between `PHIDetectionAgent`'s
+call and a human reviewer's judgment on every low-confidence span, with
+the human's decision being authoritative (see `rejected_spans` in
+`graph/state.py`).
+
+Why not the alternatives:
+- **Peer-to-peer** (agents negotiate directly) would add coordination
+  complexity with no benefit here — there's no scenario where, say,
+  `RedactionAgent` needs to question `PHIDetectionAgent`'s judgment
+  directly; that's exactly what the dedicated `ComplianceValidationAgent`
+  verifier step is for instead.
+- **Blackboard** (shared workspace multiple agents read/write
+  opportunistically) is a closer conceptual match for `GraphState` itself,
+  but this pipeline's execution order is strict and known in advance
+  (classify → detect → [review] → redact → validate → [retry] → report),
+  so a full blackboard's flexible, order-independent access pattern would
+  be solving a problem this workflow doesn't have.
+- **Manager-worker with parallel workers** doesn't apply — there's no
+  sub-task here that benefits from parallel specialized workers; each
+  node's output is a hard prerequisite for the next.
+
+The retry loop (`ComplianceValidationAgent` → back to `PHIDetectionAgent`,
+capped at `max_retries`) is the one place the topology deviates from a
+strict straight-line pipeline — a bounded feedback loop, not a cycle a
+human or another agent could get stuck negotiating forever in. A second,
+one-shot escalation path (`escalate_to_review` → `escalation_review_agent`
+→ `escalation_redaction_agent`) fires only if retries are exhausted while
+still `FAIL`: it auto-redacts the deterministic PHI types (regex-backed,
+confidence threshold ≤ 0.6) and routes only the genuinely ambiguous
+remaining types to one final human review, so a persistently-failing
+document still terminates instead of looping or silently giving up.
+
+## Memory architecture
+
+Two distinct kinds of memory, deliberately not conflated:
+
+- **Short-term / working memory:** `GraphState` itself. Everything an
+  agent needs to make its decision — spans detected so far, confidence
+  scores, retry count — lives here and is scoped to a single document's
+  run through the graph. It doesn't persist beyond that run except via
+  the checkpointer below.
+- **Persistent memory:** the SQLite checkpointer (`graph/workflow.py`,
+  `data/checkpoints.sqlite`) is what lets `HumanReviewAgent`'s
+  `interrupt()` survive a process restart — LangGraph serializes the
+  entire `GraphState` at the pause point and can resume it later, even in
+  a different process, keyed by `thread_id`. This is genuine persistent
+  memory, not just an in-process variable: kill the server mid-review and
+  the paused session is still there when it comes back up.
+- **`rejected_spans`** (a `GraphState` field, see `graph/state.py`) is a
+  narrower form of memory that persists *within* a single document's
+  retry loop specifically — every span a human has explicitly rejected as
+  "not PHI" stays remembered across retry rounds so `PHIDetectionAgent`
+  and `ComplianceValidationAgent` don't re-flag it. This is intentionally
+  scoped to one document's thread, not global across documents — a
+  rejection on one patient's note shouldn't silently change detection
+  behavior on someone else's.
+
+Not implemented: cross-document long-term memory (e.g. a store of
+past reviewer decisions that influences future documents' confidence
+scoring). Scoped out deliberately — see "Limitations & Future Work" — since
+letting one document's human review decisions quietly change another
+document's automated behavior is a real correctness/audit risk for a
+compliance tool like this one, not just an engineering nice-to-have.
+
+## Retrieval-augmented classification (RAG)
+
+When `PHI_DEID_CLASSIFICATION_BACKEND=llm` is enabled,
+`classify_with_llm()` (`agents/classification_agent.py`) does a small
+retrieval-augmented-generation step before calling the model: a fixed set
+of ~8 hand-written example document snippets (one per document type, no
+real or synthetic PHI in them) are embedded once via OpenAI's
+`text-embedding-3-small`, and at classification time the input document is
+embedded and compared by cosine similarity to pick the 3 most relevant
+examples to include as few-shot context in the prompt.
+
+This is deliberately implemented as in-memory cosine similarity over a
+small, static list rather than standing up Chroma/FAISS/Pinecone — for
+~8 examples a full vector database is unneeded overhead, and it avoids
+adding a heavier dependency to a deployment (Streamlit Community Cloud)
+that's already tight on RAM (see "Deployment" above). The retrieval
+*pattern* — embed, nearest-neighbor lookup, inject into prompt — is
+identical to what a vector-store-backed system does; only the storage
+backend differs. See the comment above `_EXAMPLES` in
+`agents/classification_agent.py` for how to swap in a real vector store
+if this ever needs to scale past a few dozen examples.
+
+**Privacy note:** classification runs before any redaction has happened,
+so sending the raw document to a third-party LLM API would ship
+un-redacted PHI off-machine. `classify_with_llm()` therefore runs the text
+through a fast deterministic pre-scrub (`_prescrub_for_llm`, a narrower
+version of the regex patterns `PHIDetectionAgent`'s fallback backend uses)
+before any of it is included in a prompt sent to OpenAI.
+
+## LLM adjudication agent (optional multi-agent LLM tier)
+
+`agents/llm_adjudication_agent.py` is a second, independent optional LLM
+path — gated behind `PHI_DEID_ADJUDICATION_BACKEND=llm` (default
+`heuristic`, a true no-op), same pattern as
+`PHI_DEID_CLASSIFICATION_BACKEND`. Where `classify_with_llm()` is a
+single-shot classification call, this node is genuinely agentic: for each
+low-confidence span, `ChatOpenAI.bind_tools([search_document])` first
+decides whether it needs more context (a regex search over the rest of
+the document for corroborating occurrences of the same text), then a
+second call always finalizes a structured `AdjudicationDecision` (Pydantic
+— `is_phi`, `confidence`, `reasoning`) via `with_structured_output`.
+
+Confirmed spans (`is_phi=True`, confidence above
+`ADJUDICATION_CONFIDENCE_FLOOR`) join `llm_reviewed_spans` and get
+redacted the same as human-approved spans; rejected spans join
+`rejected_spans` and are left alone; anything the adjudicator itself
+isn't confident about, or any call that raises an exception, is left in
+`low_confidence_spans` for a human to review — fail-safe by design, never
+silently guessed at. Real token/cost usage is recorded via
+`observability/llm_metrics.py` the same way the classification backend's
+usage is.
+
+This keeps the deliberate split intact: detection, schema validation,
+redaction, and compliance scoring all stay deterministic and LLM-free
+(fast, reproducible, directly benchmarkable — see Evaluation below); the
+LLM only ever adjudicates the specific spans traditional ML already
+flagged as ambiguous, and only in the environments where this flag is
+turned on.
+
+## Persistent audit trail
+
+`storage/audit_store.py` (SQLAlchemy, default
+`sqlite:///data/audit.sqlite`, overridable via `PHI_DEID_AUDIT_DB_URL`)
+is a second, separate persistence layer from the LangGraph checkpointer
+above. The checkpointer holds in-flight `GraphState` for one run across a
+restart; this store holds an immutable, queryable row per *completed* run
+— `store_audit()` is append-only (calling it twice with the same
+`record_id` raises, rather than silently overwriting a compliance
+record), and exposes `get_audit()` / `list_audits()` /
+`list_by_date_range()` plus `GET /records/{id}/audit` and `GET /records`
+on the API.
+
+**PHI sanitization on write.** Every agent's `audit_log` entries
+legitimately include the raw span text while a run is in flight — a human
+reviewer mid-review needs to see the actual value to approve or reject
+it, and the checkpointer that holds that state exists specifically to
+survive a restart during that review. That raw text has no reason to live
+on in a long-lived, cross-run-queryable table, though: `store_audit()`
+calls `_sanitize_audit_log()` / `_sanitize_compliance_report()` before
+writing, replacing every `span_text`/`text` value with a
+length-preserving `[REDACTED:Nchars]` placeholder. Type, confidence, and
+pass/fail all survive for reporting; only the literal identifier value is
+stripped. This is enforced once, inside `store_audit()` itself, so every
+caller gets it automatically rather than relying on each call site to
+remember to sanitize. Note this fixes the *data-exposure* half of
+`GET /records/{id}/audit` — it does not add per-record authorization to
+that endpoint, which remains a known, undone gap (see "Limitations &
+Future Work").
+
+## Guardrails
+
+Safety and control measures enforced at each layer, consolidated here
+rather than left implicit across the codebase:
+
+- **Authentication:** every PHI-handling API endpoint requires an
+  `X-API-Key` header, checked via `secrets.compare_digest` (constant-time,
+  avoids timing side-channels). See "Production roadmap" → 4.4.
+- **Privacy-safe error handling:** unhandled exceptions never echo
+  document content back to a caller — logged server-side only, caller
+  gets a generic message + a `thread_id` for support follow-up.
+- **Human-in-the-loop as a hard gate, not a suggestion:** any span below
+  its per-type confidence threshold genuinely cannot reach `RedactionAgent`
+  without either auto-approval (only for high-confidence spans) or an
+  explicit human decision — there's no code path that skips this.
+- **Bounded retries:** the compliance retry loop is capped at
+  `max_retries` (default 2) specifically so a persistently-failing
+  document can't loop forever; it terminates with an explicit
+  `requires_manual_followup` flag instead.
+- **LLM call isolation + fallback:** the optional LLM classification path
+  is wrapped in a try/except that falls back to the deterministic
+  heuristic on *any* failure — a flaky API, a bad response, or no key
+  configured at all can never crash the pipeline or block a document from
+  being processed.
+- **PHI pre-scrub before any third-party API call:** see "Retrieval-augmented
+  classification" above — the one place in this codebase that sends text
+  to an external service masks obvious identifiers first.
+- **LLM adjudication is additive, never subtractive:** the optional
+  `LLMAdjudicationAgent` can only resolve spans `PHIDetectionAgent` already
+  flagged as ambiguous — it cannot suppress a high-confidence detection,
+  and any adjudicator failure or low-confidence decision defers to a
+  human rather than guessing. See "LLM adjudication agent" above.
+- **No unbounded retry/escalation loop:** if the compliance retry cap is
+  hit while still `FAIL`, `escalate_to_review` guarantees termination —
+  auto-redact + one-shot escalation review, or an explicit
+  `requires_manual_followup` flag — rather than looping or silently
+  giving up.
+- **Audit-log PHI sanitization on persistence:** the long-lived audit
+  store never retains literal PHI text, even though the in-flight
+  checkpointer and the immediate API response correctly do. See
+  "Persistent audit trail" above.
+- **Input size:** not currently enforced — see "Limitations & Future
+  Work" for why this is scoped out rather than silently missing (it's a
+  real gap: an extremely large upload could still consume outsized memory
+  or LLM tokens with no explicit cap today).
 
 ## Project layout
 
@@ -85,13 +373,25 @@ graph/
 agents/
   classification_agent.py
   phi_detection_agent.py
-  redaction_agent.py
+  phi_validation_agent.py
+  llm_adjudication_agent.py    Optional agentic tier (PHI_DEID_ADJUDICATION_BACKEND=llm)
+  redaction_agent.py            Also has escalation_redaction_agent()
   human_review_agent.py
-  compliance_validation_agent.py
+  compliance_validation_agent.py  Also has escalate_to_review(),
+                                   escalation_review_agent(), route_after_*()
   audit_report_agent.py
+storage/
+  audit_store.py    SQLAlchemy persistent audit trail (see "Persistent
+                     audit trail"), separate from the LangGraph checkpointer
+observability/
+  llm_metrics.py     Real per-call LLM token/cost usage (make_usage_entry,
+                     estimate_cost_usd, summarize_usage)
+tracing.py           LangSmith tracing helpers (tracing_enabled(), tracing_extras())
 api/
   main.py          FastAPI: POST /redact, POST /redact/upload,
-                    POST /redact/resume, GET /health
+                    POST /redact/resume, POST /redact/batch, GET /health,
+                    GET /records, GET /records/{id}/audit, plus the
+                    /stream SSE variants of the three POST endpoints
 app/
   streamlit_app.py  Streamlit UI — HTTP client of api/main.py (see
                      "Run the Streamlit UI")
@@ -102,15 +402,21 @@ scripts/
 eval/
   evaluate.py      Scores PHIDetectionAgent against ground_truth.json —
                     precision/recall/F1, overall and per PHI type
+  ablation_study.py, error_analysis.py  See "Evaluation" below
 data/
   raw/mtsamples.csv   Kaggle "Medical Transcriptions" source (you provide)
   txt_format/         Labeled sample dataset, .txt + ground_truth.json
                        (see "Sample data generation")
   pdf_format/          .pdf versions of a few samples (see "Demo files")
   docx_format/         .docx versions of a few samples (see "Demo files")
+  audit.sqlite         Persistent audit store (created on first run)
 tests/
   test_integration.py
   test_document_ingestion.py
+  test_llm_metrics.py, test_llm_adjudication.py
+  test_api_batch.py, test_audit_sanitization.py
+  test_retry_escalation.py, test_escalation_auto_redact.py
+  test_compliance_checks.py
 ```
 
 ## File upload / ingestion
@@ -158,6 +464,16 @@ introduces small whitespace/line-break differences from the source
 `.txt`, which would silently invalidate the exact character-offset
 ground truth. They exist only to test the ingestion *code path*, not to
 score detection accuracy.
+
+The Streamlit UI's "Try a sample document" dropdown includes
+`discharge_summary_01` (all three formats) specifically to demonstrate
+`HumanReviewAgent` pausing for a genuinely ambiguous span, not just clean
+auto-redaction: it contains a bare, unlabeled 9-digit reference number
+that Presidio's built-in `PhoneRecognizer` catches at a flat, unboosted
+0.4 confidence — below the 0.65 `PHONE_NUMBER` threshold — with nothing
+else competing for that span (verified directly against the installed
+`presidio-analyzer` package, not assumed). Confirmed live:
+`human_review_invoked: true`.
 
 ## Sample data generation
 
@@ -304,6 +620,18 @@ LOCATION, NRP, and US_DRIVER_LICENSE false positives are Presidio
 correctly flagging real entities in the borrowed mtsamples body text
 that `ground_truth.json` was never told to label.
 
+**Confirmed after `header_person_recognizer` (added via error analysis,
+see below)** — re-ran `--backend presidio` once more: PERSON reached
+**1.0000 recall** (700/700, up from 9 total FNs across all types
+previously, all of them PERSON — see `eval/error_analysis.md`).
+PERSON precision moved to 0.5828 (down from ~0.58 baseline, roughly flat
+— the new recognizer's label-swallowing match style trades a handful of
+new false positives for zero remaining false negatives on this type, the
+same precision/recall trade-off already documented for MRN/accession
+above, just newly extended to PERSON). OVERALL landed at **F1 0.6619**
+(P 0.4948, R 0.9995, 2149 TP / 2194 FP / 1 FN) — recall now essentially
+saturated; only 1 PHONE_NUMBER span remains unmatched project-wide.
+
 One more honest caveat: some fallback "false positives" for DATE_TIME —
 and a good chunk of the LOCATION/NRP/US_DRIVER_LICENSE/etc. false
 positives you'll see under `--backend presidio` — are likely real
@@ -359,11 +687,108 @@ name (copying the value at import time) instead of referencing the
 never have reached the compliance re-scan step. Both are fixed and
 re-verified.
 
+**Current status: 57/57 passing**, verified against both the default
+heuristic classification backend and `PHI_DEID_CLASSIFICATION_BACKEND=llm`
+forced globally (matching a real `.env` with a working `OPENAI_API_KEY`) —
+see the Troubleshooting note below on why that specific combination
+matters. Includes `tests/test_ambiguous_identifier_routing.py` (4 tests
+covering the low-confidence routing path and the `SSN`/`US_SSN`
+threshold-key fix — see `CONFIDENCE_THRESHOLDS` in
+`agents/phi_detection_agent.py`).
+
 `eval/evaluate.py` and `scripts/generate_demo_files.py` have also been
 run for real against the actual generated dataset (the latter caught and
 fixed a real `fpdf2` API bug — `multi_cell` doesn't reset cursor position
 by default, so a second call raises `FPDFException`; fixed with explicit
 `new_x=XPos.LMARGIN, new_y=YPos.NEXT`).
+
+### Troubleshooting: "database disk image is malformed"
+
+Found live while testing on Windows: `uvicorn --reload` watches source
+files and restarts the worker process on any change. If that restart
+lands mid-request -- specifically mid-write to `data/checkpoints.sqlite`,
+LangGraph's `SqliteSaver` checkpoint DB -- the interrupted write can leave
+the SQLite file (and its `-wal`/`-shm` siblings) corrupted. Symptom: the
+Streamlit UI shows "Internal error processing this document" with a
+reference ID, and the uvicorn terminal shows
+`sqlite3.DatabaseError: database disk image is malformed`. Downstream of
+this, `pytest -q` can also show failures in batch/full-graph/streaming
+tests that all trace back to the same corrupted checkpointer, not
+independent bugs.
+
+Fix: stop both the `uvicorn` and `streamlit run` processes first, delete
+the corrupted files, then restart.
+
+```bash
+# Git Bash / macOS / Linux
+rm -f data/checkpoints.sqlite data/checkpoints.sqlite-wal data/checkpoints.sqlite-shm data/audit.sqlite
+```
+
+```powershell
+# PowerShell / cmd
+del data\checkpoints.sqlite data\checkpoints.sqlite-wal data\checkpoints.sqlite-shm data\audit.sqlite
+```
+
+Both files are recreated automatically on next startup (empty checkpoint
+store, empty audit trail) -- no data other than that session's own
+in-progress runs is lost. If this recurs often during active development,
+drop `--reload` from the `uvicorn` command and restart the server
+manually after each code change instead.
+
+### Troubleshooting: tests fail only when `PHI_DEID_CLASSIFICATION_BACKEND=llm`
+
+A different failure mode that can look similar to the one above:
+`redacted_text: None`, `KeyError: 'validation_status'`, or a missing
+`compliance_report` in `tests/test_integration.py` /
+`tests/test_api_batch.py`. If your `.env` has
+`PHI_DEID_CLASSIFICATION_BACKEND=llm` set with a real, working
+`OPENAI_API_KEY`, this is expected on an unpatched checkout: those tests'
+thin synthetic text (e.g. `"Patient contact: ...email... or ...phone...
+for follow-up."`) can get classified `not_applicable` by the live model
+rather than `clinical_note` -- reasonably, since it's barely a clinical
+document -- which routes straight to `END` before
+`RedactionAgent`/`ComplianceValidationAgent`/`AuditReportAgent` ever run.
+Every graph-invoking test fixture in this repo now pins
+`PHI_DEID_CLASSIFICATION_BACKEND` to `"heuristic"` for exactly this
+reason (see `force_fallback_detector` in `tests/test_integration.py`,
+`tests/test_api_batch.py`, `tests/test_escalation_auto_redact.py`,
+`tests/test_retry_escalation.py`, and
+`tests/test_ambiguous_identifier_routing.py`) -- these are control-flow
+tests, not classification-accuracy tests, so they shouldn't depend on a
+live external API call succeeding. If you still see this on a fresh
+checkout, check that the fixture you're hitting actually applies (it's
+opt-in per test via a fixture parameter, not global).
+
+### Ablation study and error analysis
+
+```bash
+python -m eval.ablation_study      # writes eval/ablation_results.md
+python -m eval.error_analysis      # writes eval/error_analysis.md
+```
+
+Both re-run `eval/evaluate.py`'s harness against the same labeled dataset
+and need whatever backend is installed (fallback works with zero extra
+setup; pass `--backend presidio` once Presidio/spaCy are installed for
+numbers matching Section 5's production-path results). See each script's
+docstring for what they measure and why.
+
+## LLM classification (optional)
+
+Off by default — the pipeline runs fully on the zero-API-key heuristic
+classifier unless you opt in:
+
+```bash
+export PHI_DEID_CLASSIFICATION_BACKEND=llm
+export OPENAI_API_KEY=sk-...
+```
+
+Then run the API/UI as normal. `classify_with_llm()` falls back to the
+heuristic automatically on any failure (missing key, network error, rate
+limit, malformed response), so this is safe to leave set even if the key
+becomes invalid mid-session — worst case, classification silently reverts
+to the heuristic backend rather than the request failing. See "Agent
+roles and collaboration topology" and "Retrieval-augmented classification"
+above for how this backend actually works.
 
 ## Run the API
 
@@ -399,6 +824,37 @@ Both endpoints return the same response shape. If it comes back
 each span in `review_payload.spans` and post them to `/redact/resume`
 (also requires `X-API-Key`) with the same `thread_id`.
 
+Submit several documents at once with `POST /redact/batch`
+(`BatchRedactRequest`, capped at `MAX_BATCH_SIZE = 50`) — each item is
+processed independently, so one malformed file reports its own error in
+the response array rather than failing the whole batch.
+
+`GET /health` reports real readiness, not a hardcoded `"ok"`:
+`graph_compiled`, `checkpointer_backend` (`sqlite` or `memory`), and
+`checkpointer_restart_survivable` (`false` when running on the in-memory
+fallback) — see `get_checkpointer_backend()` in `graph/workflow.py`.
+
+`GET /records` and `GET /records/{id}/audit` read from the persistent
+audit store (see "Persistent audit trail" above) — the returned
+`audit_log`/`compliance_report` have PHI span text replaced with
+`[REDACTED:Nchars]` placeholders, since this is the long-lived, queryable
+store, not the one-time response to the caller who already submitted
+that text.
+
+### Streaming variants
+
+`/redact/stream`, `/redact/upload/stream`, and `/redact/resume/stream` are
+Server-Sent Events versions of the three endpoints above — same auth, same
+graph, same final payload, but they emit an `event: node` message after
+*each* LangGraph node finishes (`{"node": "phi_detection", ...}`, in the
+exact order `graph/workflow.py`'s `build_graph()` wires them) before the
+final `event: done` message with the usual response shape. This is what
+powers the Streamlit UI's live "which agent is running right now" progress
+stepper — see `graph/workflow.py`'s `run_stream()`/`resume_stream()` and
+`api/main.py`'s `_stream_response()`. Not required reading to use the API;
+the plain non-streaming endpoints above remain the simpler choice for a
+one-shot script or curl call.
+
 ## Run the Streamlit UI
 
 `app/streamlit_app.py` is a thin HTTP client of `api/main.py` — it talks
@@ -426,9 +882,74 @@ Streamlit opens at `http://localhost:8501`. Paste the same
 never hardcoded into the UI itself) — until you do, every request gets a
 401. From there: paste text or upload a `.txt`/`.pdf`/`.docx` file, run
 de-identification, and the UI walks you through the same states the API
-returns: a human-review approve/reject form if `PHIDetectionAgent`
-flagged low-confidence spans, otherwise straight to the redacted text,
-compliance report, and full audit log.
+returns: a live pipeline stepper (via the streaming endpoints above)
+showing each LangGraph node as it actually runs, then a human-review
+approve/reject form if `PHIDetectionAgent` flagged low-confidence spans,
+otherwise straight to the redacted text, compliance report, audit log, and
+per-node timing.
+
+The sidebar's **View** switch also has an **Evaluation dashboard** page —
+reads `eval/final_results.csv`, `eval/ablation_results.md`, and
+`eval/error_analysis.md` directly off disk and renders them in the UI, so
+the ablation study and error analysis are visible without leaving the app
+or opening the repo separately. Run the three `eval/*.py` scripts (see
+"Evaluation" above) first if those files don't exist yet.
+
+## Deployment
+
+### Streamlit Community Cloud (used for the live demo link above)
+
+Streamlit Community Cloud only runs one entrypoint, so
+`app/streamlit_app.py` starts the FastAPI backend itself in a background
+thread instead of relying on a second process — see the
+`PHI_DEID_EMBED_API` check near the top of that file.
+
+1. Push this repository to GitHub (public, or a private repo the Streamlit
+   account can access).
+2. Go to [share.streamlit.io](https://share.streamlit.io) → **New app** →
+   pick the repo/branch → set **Main file path** to `app/streamlit_app.py`.
+3. Before deploying, open **Advanced settings → Secrets** and add:
+   ```toml
+   PHI_DEID_ENV = "prod"
+   PHI_DEID_API_KEY = "choose-any-string-here"
+   ```
+   `PHI_DEID_ENV = "prod"` is a single switch that sets both
+   `PHI_DEID_EMBED_API` and `PHI_DEID_SPACY_MODEL` for you (see
+   `.env.example`). Setting those two individually instead of
+   `PHI_DEID_ENV` still works unchanged, if you'd rather be explicit:
+   ```toml
+   PHI_DEID_EMBED_API = "1"
+   PHI_DEID_API_KEY = "choose-any-string-here"
+   PHI_DEID_SPACY_MODEL = "en_core_web_sm"
+   ```
+4. Deploy. First build installs `en_core_web_sm` from the direct wheel URL
+   in `requirements.txt` (Streamlit Cloud has no `spacy download` build
+   step, so a plain `spacy>=3.7.0` line alone isn't enough).
+5. Once live, the sidebar's API key auto-fills from the secret above — no
+   manual entry needed for a reviewer opening the link cold.
+
+**Python version:** this repo ships a `runtime.txt` pinning `python-3.11`,
+since spaCy 3.7 (a `presidio-analyzer` dependency) has no prebuilt wheels
+for Python 3.13 and fails to build `blis` from source on both Streamlit
+Cloud and Windows locally (the same failure the "Setup" section above
+warns about). Multiple current Streamlit Community Cloud users have
+reported `runtime.txt` being silently ignored, with the platform
+defaulting to a newer Python anyway — if the deploy fails on a `blis`/
+`spacy` build error despite `runtime.txt` being present, explicitly select
+Python 3.11 (or 3.12) in the deploy dialog's **Advanced settings** instead
+of relying on `runtime.txt` alone.
+
+### Hugging Face Spaces (Docker SDK) — alternative path
+
+`Dockerfile` + `start.sh` run the full two-process architecture (FastAPI +
+Streamlit) in one container using `en_core_web_lg`, matching the report's
+eval numbers exactly. As of July 2026, Hugging Face requires a payment
+method on file to select the Docker SDK when creating a Space (confirmed
+on HF's own community forums) — free-tier CPU Basic hardware itself still
+shows as $0/hour, but the SDK selection is gated. If that's acceptable:
+create a Space with SDK "Docker", set `PHI_DEID_API_KEY` under
+**Settings → Variables and secrets**, then push this repo to the Space's
+git remote as usual.
 
 ## Production roadmap
 
@@ -563,13 +1084,95 @@ overlooked.
   body are neither labeled nor scored, which is why some measured
   "false positives" (especially DATE_TIME, LOCATION) are likely real,
   correct detections the eval methodology just can't see.
-- **LLM classification backend** (`classify_with_llm`) is still stubbed —
-  wire up an LLM call if the heuristic classifier isn't accurate enough
-  on real (non-synthetic) documents.
 - **Scanned PDFs** need `extract_pdf_with_ocr()` called explicitly — not
   wired into the default `/redact/upload` path, since OCR is slow and
   shouldn't silently fire on every PDF.
-- **Deployment infra** (Docker, secrets management for `PHI_DEID_API_KEY`,
-  HTTPS termination, HuggingFace Spaces or equivalent config) — not set
-  up. `PHI_DEID_API_KEY` currently must be set as a plain environment
-  variable by whoever runs the process.
+- **No input size limit.** Neither the API nor the LLM classification
+  path caps how large an uploaded document can be — a very large upload
+  could consume outsized memory in the detection pass, or (on the LLM
+  backend specifically) outsized token cost, with no explicit guard today.
+- **No cross-document memory.** A human reviewer's decision on one
+  document doesn't influence confidence scoring on a later, unrelated
+  document — deliberate, not an oversight (see "Memory architecture"
+  above): letting one patient's review quietly change another patient's
+  automated behavior is a real audit/correctness risk for a compliance
+  tool, not just a missed optimization.
+
+### Implemented (LLM/agentic-concepts hardening pass)
+
+- **LLM classification backend** (`classify_with_llm`,
+  `agents/classification_agent.py`) — a real GPT-4o-mini call via the
+  OpenAI API, gated behind `PHI_DEID_CLASSIFICATION_BACKEND=llm` +
+  `OPENAI_API_KEY`, with automatic fallback to the heuristic backend on
+  any failure. Includes a small retrieval-augmented few-shot step (see
+  "Retrieval-augmented classification" above) and a privacy pre-scrub
+  before any text is sent externally.
+- **Ablation study** (`eval/ablation_study.py`) — measures what
+  `HumanReviewAgent` is actually worth by comparing OVERALL F1 with vs.
+  without low-confidence spans being routed to a reviewer. Run it and
+  commit `eval/ablation_results.md`; see that file's docstring for exact
+  usage.
+- **Error analysis** (`eval/error_analysis.py`) — pulls real false
+  positives and false negatives out of an eval run (not just aggregate
+  counts) and drafts a root-cause explanation for each from this
+  project's own documented failure patterns. Run it and commit
+  `eval/error_analysis.md`.
+- **Observability.** Every graph node except `human_review` (see
+  `graph/workflow.py`'s `_timed()` docstring for why) is wrapped with
+  wall-clock timing, aggregated into `compliance_report["node_timings_ms"]`
+  and surfaced in the Streamlit UI's "Observability" tab.
+- **Explicit collaboration topology + guardrails + memory-architecture
+  write-ups** — see the sections above. Previously true of the system but
+  not written down anywhere as such.
+- **CI** (`.github/workflows/test.yml`) — runs `pytest` on every push,
+  installing everything except the heavy NLP/LLM stack (the test suite
+  runs on the regex fallback backend, which needs neither).
+- **Deployment infra.** `Dockerfile` + `start.sh` (Hugging Face Spaces,
+  Docker SDK) and the Streamlit Community Cloud path (see "Deployment"
+  above) are both set up and documented; `PHI_DEID_API_KEY` is read from
+  an environment variable / platform secret in both, never hardcoded.
+- **Live pipeline progress + evaluation dashboard in the UI.** New SSE
+  endpoints (`/redact/stream`, `/redact/upload/stream`,
+  `/redact/resume/stream`) let the Streamlit UI show a real, node-by-node
+  progress stepper while a document is processing, sourced from actual
+  LangGraph execution events (`graph/workflow.py`'s `run_stream()`), not a
+  simulated animation. The UI also gained a visual pass (consistent
+  navy/teal palette matching the report/deck) and a second page reading
+  `eval/*.md`/`.csv` output directly, so the ablation study and error
+  analysis are viewable in-app.
+- **`.env` support.** `api/main.py` and `app/streamlit_app.py` auto-load a
+  local `.env` via `python-dotenv` if present (`.env.example` documents
+  every variable); `.env` was already gitignored.
+
+### Implemented (multi-agent LLM tier + audit hardening pass)
+
+- **Persistent audit trail** (`storage/audit_store.py`) — a second,
+  separate SQLAlchemy-backed store from the LangGraph checkpointer;
+  append-only, queryable by date range, exposed via `GET /records` and
+  `GET /records/{id}/audit`. See "Persistent audit trail" above.
+- **LLM adjudication agent** (`agents/llm_adjudication_agent.py`) — the
+  genuinely agentic (tool-calling + structured-output) optional LLM tier,
+  gated behind `PHI_DEID_ADJUDICATION_BACKEND=llm` (default off). See
+  "LLM adjudication agent" above.
+- **Batch endpoint** (`POST /redact/batch`) — processes multiple documents
+  per request with per-item fault isolation.
+- **Retry-cap escalation** (`escalate_to_review` / `escalation_review_agent`
+  / `escalation_redaction_agent` in `agents/compliance_validation_agent.py`
+  and `agents/redaction_agent.py`) — guarantees a persistently-failing
+  document still terminates, auto-redacting deterministic PHI types and
+  routing only ambiguous types to one final human review.
+- **Structured compliance checks** — `compliance_checks` (per-category
+  pass/fail/residual-count) and a `compliance_score` (0–1), a more
+  granular complement to the single PASS/FAIL `validation_status`.
+- **Real `/health` readiness reporting** — `graph_compiled`,
+  `checkpointer_backend`, `checkpointer_restart_survivable`, replacing a
+  hardcoded `"ok"`.
+- **Audit-log PHI sanitization fix** — the persisted audit store no
+  longer retains literal PHI text (see "Persistent audit trail" above);
+  the in-flight checkpointer and immediate API response are unaffected,
+  since both have a legitimate reason to hold the real value.
+- **Test coverage** — `tests/test_llm_adjudication.py`,
+  `tests/test_audit_sanitization.py`, `tests/test_api_batch.py`,
+  `tests/test_retry_escalation.py`, `tests/test_escalation_auto_redact.py`,
+  `tests/test_compliance_checks.py`, `tests/test_llm_metrics.py` — 51
+  tests total across the whole suite, zero regressions.

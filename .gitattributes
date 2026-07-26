@@ -1,0 +1,17 @@
+# Normalize line endings to LF in the repository regardless of the
+# committing OS, so cross-platform editing (Windows/macOS/Linux) doesn't
+# show every line of a file as "changed" purely from CRLF vs LF -- this is
+# what caused ~372 files under data/ to show as modified with no real
+# content change (confirmed via `git diff`: every line touched, nothing
+# actually different) after editing this repo on Windows.
+* text=auto eol=lf
+
+# Keep binary formats untouched -- never text-normalize these.
+*.docx binary
+*.pptx binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.sqlite binary
+*.xlsx binary
