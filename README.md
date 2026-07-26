@@ -5,7 +5,7 @@ detects PHI, redacts it, validates the redaction, and produces an audit
 trail + compliance report.
 
 **GitHub repository:** [github.com/Ramya192/phi-deidentification](https://github.com/Ramya192/phi-deidentification)
-**Live demo (Streamlit Community Cloud):** `[FILL IN — paste the app URL after it finishes deploying]`
+**Live demo (Streamlit Community Cloud):** [phi-deidentification.streamlit.app](https://phi-deidentification.streamlit.app/)
 
 The live demo runs the same FastAPI + Streamlit architecture described
 below in a single process — `app/streamlit_app.py` starts the FastAPI
@@ -632,6 +632,27 @@ above, just newly extended to PERSON). OVERALL landed at **F1 0.6619**
 (P 0.4948, R 0.9995, 2149 TP / 2194 FP / 1 FN) — recall now essentially
 saturated; only 1 PHONE_NUMBER span remains unmatched project-wide.
 
+**Confirmed after deregistering Presidio's built-in `NhsRecognizer`
+(UK NHS number recognizer)** — found via `eval/error_analysis.py`
+flagging two PHONE_NUMBER false negatives as explicitly "UNEXPECTED"
+(`5394308705`, `847-532-1046`: ordinary 10-digit US phone numbers that
+should have matched cleanly). Reproduced directly with a live
+`AnalyzerEngine` instance, printing every raw candidate span before
+`_dedupe_overlaps` runs: Presidio ships a built-in NHS-number recognizer
+that validates any 10-digit sequence against the real NHS Mod-11
+checksum and returns a perfect 1.0 confidence with zero UK/NHS context
+required. Both numbers happened to pass that checksum by coincidence, so
+the NHS candidate beat this project's own PHONE_NUMBER detections (built-in
+phone recognizer + `phone_ext_recognizer` at 0.75) in the overlap
+resolution — the span was still correctly redacted either way (no PHI
+leak), just mislabeled `UK_NHS` instead of `PHONE_NUMBER`, which is what
+surfaced as a false negative in eval. Fixed the same way as the earlier
+`UsLicenseRecognizer` removal (deregistered, not threshold-tuned, since
+neither recognizer is relevant to this project's all-US clinical
+documents). Re-ran `--backend presidio` once more: OVERALL reached **F1
+0.6814** (P 0.5167, R 1.0000, 2150 TP / 2011 FP / 0 FN) — every one of
+the 2,150 labeled spans is now caught, zero false negatives project-wide.
+
 One more honest caveat: some fallback "false positives" for DATE_TIME —
 and a good chunk of the LOCATION/NRP/US_DRIVER_LICENSE/etc. false
 positives you'll see under `--backend presidio` — are likely real
@@ -1036,6 +1057,19 @@ overlooked.
     `compliance_validation_agent.py` (defense-in-depth, since it
     re-scans independently). Confirmed fixed live: rejecting a span now
     reaches `PASS` on `retry_count=0`, no repeated review round.
+- **`ModuleNotFoundError: No module named 'api'` on the first real
+  Streamlit Community Cloud deployment.** `app/streamlit_app.py` computed
+  `PROJECT_ROOT` but never added it to `sys.path`. Streamlit sets
+  `sys.path[0]` to the entrypoint script's own directory (`app/`), not the
+  repo root, so `from api.main import app` inside `_start_embedded_api()`
+  (the single-process deployment path) failed — never caught locally
+  since local dev always runs the two-process mode (`uvicorn` and
+  `streamlit run` as separate processes), so that import was never
+  actually exercised in-process until the first live deploy. Fixed by
+  inserting `PROJECT_ROOT` into `sys.path` at module load time. Reproduced
+  the exact failure in isolation (simulating Streamlit Cloud's
+  `sys.path[0]` behavior) before shipping the fix, then confirmed live on
+  the redeployed app.
 
 ### Documented, not built (deadline trade-off)
 

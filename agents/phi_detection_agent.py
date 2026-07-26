@@ -270,6 +270,29 @@ def _get_analyzer():
         # generating the candidate at all.
         _analyzer.registry.remove_recognizer("UsLicenseRecognizer")
 
+        # Presidio's built-in UK NHS number recognizer (NhsRecognizer) checks
+        # a 10-digit sequence against the real NHS Mod-11 checksum algorithm
+        # and reports a perfect 1.0 confidence on any match -- no UK/NHS
+        # context needed. Found via eval/error_analysis.py flagging two
+        # PHONE_NUMBER false negatives as "UNEXPECTED" (standard-format
+        # numbers -- "5394308705", "847-532-1046" -- that should have
+        # matched cleanly). Confirmed directly, not guessed: reproduced with
+        # a real AnalyzerEngine instance and printed every raw candidate
+        # before dedup. Both numbers happen to pass the NHS checksum and are
+        # returned as NHS at score 1.0, which beats our own PHONE_NUMBER
+        # recognizers (Presidio's built-in at whatever confidence, plus
+        # phone_ext_recognizer at 0.75) in _dedupe_overlaps -- the span
+        # still gets redacted (so no PHI leak), just mislabeled as UK_NHS
+        # instead of PHONE_NUMBER, which is what showed up as a FN in eval.
+        # This project's documents are all US clinical records with no NHS
+        # field in any of the 7 document types (see
+        # scripts/build_sample_dataset.py _FIELD_SETS) -- same "irrelevant
+        # recognizer generates false claims on ordinary US data" pattern as
+        # UsLicenseRecognizer above, same fix: deregister rather than
+        # threshold-tune, since the real problem is the candidate being
+        # generated at all, not its score.
+        _analyzer.registry.remove_recognizer("NhsRecognizer")
+
         # Clinical-specific custom recognizers on top of Presidio's built-ins
         # (PERSON, DATE_TIME, PHONE_NUMBER, EMAIL_ADDRESS, US_SSN, LOCATION, ...)
         #
