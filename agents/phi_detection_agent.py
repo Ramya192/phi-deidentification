@@ -17,11 +17,19 @@ agnostic to which backend actually ran.
 """
 from __future__ import annotations
 
+import logging
 import os
 import re
 from datetime import datetime, timezone
 
 from graph.state import GraphState, PHISpan
+
+# Shares the root logging config api/main.py sets up (logging.basicConfig at
+# INFO level) when this module runs in the same process -- both the embedded
+# single-process deployment (Streamlit Cloud) and the two-process local/
+# Docker setup import this module inside that same interpreter, so no
+# separate basicConfig call is needed here.
+logger = logging.getLogger("phi_deid_agent")
 
 HIGH_CONFIDENCE_THRESHOLD = 0.7  # default bar for any phi_type not listed in CONFIDENCE_THRESHOLDS below
 
@@ -501,6 +509,14 @@ def phi_detection_agent(state: GraphState) -> GraphState:
             spans = _detect_presidio(text)
             backend_used = "presidio"
         except Exception:
+            # Previously a silent fallback -- swallowed the real error with
+            # no trace anywhere, which made a hard, reproducible failure on
+            # live deployment look identical to "presidio just isn't
+            # installed" in every log and audit entry. logger.exception
+            # records the full traceback (message + stack) at ERROR level
+            # so a real bug here is diagnosable instead of silently
+            # downgrading detection quality with no visibility.
+            logger.exception("Presidio detection failed; falling back to regex-only detector")
             spans = _detect_fallback(text)
     else:
         spans = _detect_fallback(text)
