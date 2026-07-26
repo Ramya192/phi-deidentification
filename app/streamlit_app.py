@@ -33,6 +33,7 @@ import json
 import os
 import pathlib
 import socket
+import sys
 import threading
 import time
 
@@ -72,6 +73,18 @@ st.set_page_config(page_title="PHI De-identification", page_icon=":material/heal
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
 EVAL_DIR = PROJECT_ROOT / "eval"
+
+# Streamlit Community Cloud (and `streamlit run` in general) sets sys.path[0]
+# to this script's own directory (app/), not the repo root -- so top-level
+# packages like api/, agents/, graph/, storage/ are NOT importable by
+# default. This only bites _start_embedded_api() below (the single-process
+# deployment path), which is exactly why it went uncaught locally: local dev
+# always runs the two-process mode (`uvicorn api.main:app` as a separate
+# process), so `from api.main import app` was never actually exercised
+# in-process until the first real Streamlit Cloud deploy surfaced
+# "ModuleNotFoundError: No module named 'api'".
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 # One pre-generated sample per supported upload format -- lets an evaluator
 # exercise the full .txt/.pdf/.docx ingestion path (ingestion/) without
