@@ -95,6 +95,13 @@ try:
 
     _PRESIDIO_AVAILABLE = True
 except Exception:  # ImportError or spacy model missing
+    # Previously silent -- if this import fails at module load time, every
+    # request for the rest of the process's life takes the regex-only path
+    # directly (see the `if _PRESIDIO_AVAILABLE` check below) and never
+    # even reaches _detect_presidio()/_get_analyzer(), so the request-time
+    # logger.exception() added there never fires either. This is the other
+    # place a Presidio failure can go completely unlogged.
+    logger.exception("presidio_analyzer import failed at module load -- PHI detection will use the regex-only fallback for the life of this process")
     _PRESIDIO_AVAILABLE = False
 
 USE_FALLBACK_ONLY = False  # flip to True to force the regex-only backend
