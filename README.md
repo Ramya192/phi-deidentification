@@ -1070,6 +1070,27 @@ overlooked.
   the exact failure in isolation (simulating Streamlit Cloud's
   `sys.path[0]` behavior) before shipping the fix, then confirmed live on
   the redeployed app.
+- **Silent `numpy`/`thinc` ABI break on Streamlit Community Cloud**, found
+  after the live deploy was already up and passing the checks above.
+  `requirements.txt` never pinned a `numpy` version, so a fresh install
+  resolved `numpy==2.4.6`; `thinc==8.2.4` (a `spacy` 3.7.x dependency)
+  ships a Cython extension compiled against NumPy 1.x's internal `dtype`
+  layout, which NumPy 2.0 changed. That broke `presidio_analyzer`'s import
+  with `ValueError: numpy.dtype size changed, may indicate binary
+  incompatibility` — a hard crash at Python's C-extension level, not
+  something a `try/except` can recover from. `PHIDetectionAgent`'s
+  existing fallback logic caught it anyway (both the module-load-time and
+  request-time `except Exception` blocks around Presidio), so every
+  request silently ran the regex-only detector instead — no error
+  surfaced anywhere, just quietly degraded detection (missing
+  `PERSON`/`ORGANIZATION`/`LOCATION` entirely, since the fallback has no
+  real NER). Not caught by local testing, since a local `pip install` can
+  resolve a different `numpy` build than Streamlit Cloud's `uv`-based
+  installer does. Root-caused by adding `logger.exception()` to both of
+  those previously-silent `except` blocks and reading the resulting
+  traceback in Streamlit Cloud's own log viewer. Fixed by pinning
+  `numpy<2.0.0`. Confirmed live: PHI spans detected went from 4
+  (regex-only) to 22 (Presidio + NER) on the same test document.
 
 ### Documented, not built (deadline trade-off)
 
