@@ -26,10 +26,12 @@ data/audit*.sqlite*
 data/scratch*.sqlite*
 data/plain_test.txt
 
-# Office lock files (created while a .docx/.pptx is open in Word/PowerPoint)
+# Office lock files (created while a .docx/.pptx is open in Word/PowerPoint
+# -- Word opening a .md file, e.g. via "Open With", makes one of these too)
 ~$*.docx
 ~$*.pptx
 ~$*.xlsx
+~$*.md
 
 # FUSE/mount artifacts from cross-platform file bridges -- never meaningful
 # content, safe to ignore wherever they appear

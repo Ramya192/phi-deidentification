@@ -114,6 +114,24 @@ if str(PROJECT_ROOT) not in sys.path:
 # regression test. Still worth confirming once against the real
 # Presidio+spaCy backend (this sandbox has no working spaCy model, so the
 # NER-driven parts of the pipeline can't be exercised end-to-end here).
+#
+# clinical_note_018 is included separately as the "survives adjudication"
+# sample: discharge_summary_01's low-confidence span gets resolved by
+# LLMAdjudicationAgent itself when PHI_DEID_ADJUDICATION_BACKEND=llm is
+# set (confirmed directly -- the LLM correctly reasons the flagged span
+# is an internal reference number, not PHI), so it stops demonstrating
+# the human-review pause the moment that backend is turned on. Scanned
+# ~90 documents from the labeled dataset for one where the LLM's own
+# confidence genuinely lands below its 0.75 floor rather than resolving
+# confidently -- most don't; this is a real, verified exception, not the
+# typical case. Its one deferred span (a bare "07/06" reference with no
+# surrounding pattern to anchor it) still reaches human review with
+# adjudication on, with the LLM's own reasoning recorded in the audit
+# log: "not accompanied by any identifiable patient information... other
+# date patterns in the document do not indicate a recurring structural
+# pattern." No .docx/.pdf conversion exists for this one (unlike the two
+# samples above) -- it's included for the adjudication-tier behavior
+# specifically, not to re-demonstrate multi-format ingestion.
 SAMPLE_DOCS = {
     "Clinical note -- plain text (.txt)": PROJECT_ROOT / "data" / "txt_format" / "clinical_note_001.txt",
     "Clinical note -- Word (.docx)": PROJECT_ROOT / "data" / "docx_format" / "clinical_note_001.docx",
@@ -121,6 +139,7 @@ SAMPLE_DOCS = {
     "Discharge summary -- ambiguous identifier, likely triggers human review (.txt)": PROJECT_ROOT / "data" / "txt_format" / "discharge_summary_01.txt",
     "Discharge summary -- ambiguous identifier, likely triggers human review (.docx)": PROJECT_ROOT / "data" / "docx_format" / "discharge_summary_01.docx",
     "Discharge summary -- ambiguous identifier, likely triggers human review (.pdf)": PROJECT_ROOT / "data" / "pdf_format" / "discharge_summary_01.pdf",
+    "Clinical note -- still triggers human review even with LLM adjudication on (.txt)": PROJECT_ROOT / "data" / "txt_format" / "clinical_note_018.txt",
 }
 
 
