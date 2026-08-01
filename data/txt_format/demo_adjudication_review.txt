@@ -1,0 +1,15 @@
+Patient Name: Harold Whitfield
+DOB: 03/14/1948
+MRN: MR-618822
+Exam Date: 06/24/2026
+Referring Physician: Sandra Locke
+Radiologist: Owen Marsh
+
+CC: Longstanding intermittent vertigo with recent worsening.
+HX: 78y/o RHM referred by Neurology for evaluation of chronic vestibular symptoms. In 3/79, per the patient's recollection and an old transfer summary, he began experiencing episodic vertigo lasting minutes at a time, initially attributed to inner ear infection and treated conservatively without imaging. Records from that period were not transferred and the exact circumstances are not documented in this chart. He was seen at a community ENT clinic in 6/84 for recurrent symptoms; that visit is referenced only secondhand in a later consult note and no primary record exists in this system. He returned to care locally in 11/91 with worsening frequency, at which point audiometry was performed and was unremarkable. A brainstem auditory evoked response study on 2/14/93 was within normal limits. He was seen again in the Neuro-otology clinic on 9/02/95; exam at that time showed mild positional nystagmus. MRI brain with contrast on 5/19/97 was unremarkable. He continued intermittent symptoms and was last formally evaluated for this complaint on 10/03/01, after which he was lost to follow-up until the current visit.
+MEDS: Meclizine PRN, Lisinopril 10mg daily.
+PMH: 1) Hypertension, 2) Benign positional vertigo, 3) Osteoarthritis.
+FHX: Father died age 81 of stroke. Mother died age 84, cause unknown.
+SHX: Retired mechanic, denies tobacco or illicit drug use, occasional alcohol.
+EXAM: BP 142/88. HR 76. RR 14. Temp 36.7C.
+ASSESSMENT AND PLAN: Repeat vestibular testing given long symptom history and gaps in prior documentation.

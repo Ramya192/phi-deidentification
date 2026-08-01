@@ -115,21 +115,34 @@ if str(PROJECT_ROOT) not in sys.path:
 # Presidio+spaCy backend (this sandbox has no working spaCy model, so the
 # NER-driven parts of the pipeline can't be exercised end-to-end here).
 #
-# clinical_note_018 is included separately as the "survives adjudication"
-# sample: discharge_summary_01's low-confidence span gets resolved by
-# LLMAdjudicationAgent itself when PHI_DEID_ADJUDICATION_BACKEND=llm is
-# set (confirmed directly -- the LLM correctly reasons the flagged span
-# is an internal reference number, not PHI), so it stops demonstrating
-# the human-review pause the moment that backend is turned on. Scanned
-# ~90 documents from the labeled dataset for one where the LLM's own
-# confidence genuinely lands below its 0.75 floor rather than resolving
-# confidently -- most don't; this is a real, verified exception, not the
-# typical case. Its one deferred span (a bare "07/06" reference with no
-# surrounding pattern to anchor it) still reaches human review with
-# adjudication on, with the LLM's own reasoning recorded in the audit
-# log: "not accompanied by any identifiable patient information... other
-# date patterns in the document do not indicate a recurring structural
-# pattern." No .docx/.pdf conversion exists for this one (unlike the two
+# demo_adjudication_review is included separately as the "survives
+# adjudication" sample. An earlier attempt used clinical_note_018 (a real
+# document from the labeled dataset) based on a single test run showing
+# its one low-confidence span deferred to human review -- that turned out
+# to be a lucky run, not a reliable property: repeat testing showed only
+# 1/8 runs actually deferred, and it resolved confidently (not-PHI) on a
+# live Streamlit Cloud demo run. Root cause: OpenAI's API is not perfectly
+# deterministic even at temperature=0 (documented server-side batching
+# effect), so any span whose adjudicator confidence sits close to the 0.75
+# floor will flip sides across runs. Scanning ~90 real documents for one
+# that clears the floor by a wide, stable margin found nothing better than
+# a 33% defer rate, so this sample is hand-constructed instead: a dense,
+# realistic dictated narrative (modeled on the style of the real dataset)
+# with many recurring two-digit-year dates, where the target span ("3/79")
+# is deliberately the earliest, vaguest one -- attributed only to "the
+# patient's recollection," with its source records explicitly noted as
+# never transferred. That combination (long narrative diluting any one
+# date's salience + explicit provenance doubt) reliably keeps the
+# adjudicator's own confidence right at 0.7, just under the 0.75 floor.
+# Verified directly, not assumed: 10/10 repeat calls to
+# adjudicate_span_with_llm() on that span all returned confidence 0.7, and
+# 8/8 full-pipeline runs (PHIDetectionAgent -> PHIValidationAgent ->
+# LLMAdjudicationAgent) all left it in low_confidence_spans, i.e. still
+# routed to human review, with PHI_DEID_ADJUDICATION_BACKEND=llm on. Given
+# the same non-determinism that sank the first attempt, this is "reliably"
+# rather than "guaranteed" -- but a document that held at 100% across 8
+# full-pipeline runs is a meaningfully different bet than one that held at
+# 12.5%. No .docx/.pdf conversion exists for this one (unlike the two
 # samples above) -- it's included for the adjudication-tier behavior
 # specifically, not to re-demonstrate multi-format ingestion.
 SAMPLE_DOCS = {
@@ -139,7 +152,7 @@ SAMPLE_DOCS = {
     "Discharge summary -- ambiguous identifier, likely triggers human review (.txt)": PROJECT_ROOT / "data" / "txt_format" / "discharge_summary_01.txt",
     "Discharge summary -- ambiguous identifier, likely triggers human review (.docx)": PROJECT_ROOT / "data" / "docx_format" / "discharge_summary_01.docx",
     "Discharge summary -- ambiguous identifier, likely triggers human review (.pdf)": PROJECT_ROOT / "data" / "pdf_format" / "discharge_summary_01.pdf",
-    "Clinical note -- still triggers human review even with LLM adjudication on (.txt)": PROJECT_ROOT / "data" / "txt_format" / "clinical_note_018.txt",
+    "Clinical note -- still triggers human review even with LLM adjudication on (.txt)": PROJECT_ROOT / "data" / "txt_format" / "demo_adjudication_review.txt",
 }
 
 

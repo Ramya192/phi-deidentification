@@ -19,19 +19,30 @@ alongside two web server processes) — expect somewhat lower PERSON/DATE_TIME
 recall live than the report's measured numbers. Run it locally with the
 default settings to reproduce the reported numbers exactly.
 
-**The live demo also has `PHI_DEID_CLASSIFICATION_BACKEND=llm` set as a
-Streamlit secret** — every document classified through the link above
-makes a real GPT-4o-mini call (see "Retrieval-augmented classification"
-below), not the zero-API-key heuristic. This is worth stating explicitly:
-the rest of this README describes the heuristic as the *default* because
-that's genuinely the right call for local dev, tests, and reproducible
-eval (see "Notable engineering decisions" — free, deterministic, doesn't
-depend on an external API being up) — but "off by default in code" should
-not be read as "unused in practice." The live, publicly-reachable demo is
-real evidence the LLM classification tier works end to end, not just a
-config flag nobody exercises. `PHI_DEID_ADJUDICATION_BACKEND` is *not*
-set there, so the optional LLM adjudication tier is genuinely off on the
-live demo, same as the code default.
+**The live demo also has `PHI_DEID_CLASSIFICATION_BACKEND=llm` and
+`PHI_DEID_ADJUDICATION_BACKEND=llm` set as Streamlit secrets** — every
+document classified through the link above makes a real GPT-4o-mini call
+for classification (see "Retrieval-augmented classification" below), and
+every low-confidence PHI span PHIDetectionAgent flags gets a second real
+GPT-4o-mini call from `LLMAdjudicationAgent` before falling back to human
+review (see "LLM adjudication agent" below). Neither is the zero-API-key
+heuristic. This is worth stating explicitly: the rest of this README
+describes both as *off by default in code* because that's genuinely the
+right call for local dev, tests, and reproducible eval (see "Notable
+engineering decisions" — free, deterministic, doesn't depend on an
+external API being up) — but "off by default in code" should not be read
+as "unused in practice." The live, publicly-reachable demo is real
+evidence both LLM tiers work end to end, not just config flags nobody
+exercises. One consequence worth knowing before demoing live: OpenAI's
+API is not perfectly deterministic even at `temperature=0` (a documented
+server-side batching effect), so a span sitting close to
+`LLMAdjudicationAgent`'s 0.75 confidence floor can resolve confidently on
+one run and defer to human review on the next. The "Clinical note — still
+triggers human review even with LLM adjudication on" sample in the UI's
+sample-document dropdown was constructed and verified against that
+non-determinism (10/10 repeat calls at confidence 0.7, 8/8 full-pipeline
+runs deferred), but "reliably" is still a probabilistic claim, not a
+guarantee.
 
 A `Dockerfile` + `start.sh` are also included for single-container
 deployment (e.g. Hugging Face Spaces, Docker SDK) as an alternative path —
