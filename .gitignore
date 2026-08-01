@@ -1,7 +1,13 @@
 __pycache__/
 *.pyc
+# Wildcard rather than exact names -- .venv311/ (a second Python version for
+# local testing) and .venv_check/ (a scratch env for verifying a from-scratch
+# install) both had to be added here after the fact once, so anything named
+# .venv* or venv* is excluded up front instead of one at a time.
 .venv/
+.venv*/
 venv/
+venv*/
 .env
 *.egg-info/
 .pytest_cache/
@@ -29,3 +35,8 @@ data/plain_test.txt
 # content, safe to ignore wherever they appear
 .fuse_hidden*
 data/.fuse_hidden*
+
+# Personal prep/scratch material (presentation notes, pre-submission
+# self-evaluation, screenshot source) -- not part of the submitted
+# project, not meant for an evaluator to see.
+practice_files/

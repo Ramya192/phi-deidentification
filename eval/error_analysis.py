@@ -201,6 +201,10 @@ def main():
     )
 
     lines.append("## False Positives\n")
+    if not fp_sample:
+        lines.append(
+            f"No false positives found -- {len(all_fp)} total across {result['docs_evaluated']} documents.\n"
+        )
     for i, item in enumerate(fp_sample, 1):
         lines.append(f"**FP {i}.** `{item['phi_type']}` matched text: `{item.get('text', '(n/a)')}` "
                       f"in `{item['filename']}`\n")
@@ -208,6 +212,19 @@ def main():
         lines.append(f"- Root cause: {_explain_fp(item)}\n")
 
     lines.append("## False Negatives\n")
+    if not fn_sample:
+        # Not a rendering gap -- a genuinely empty section here means
+        # all_fn was empty, i.e. OVERLAP recall was 1.0 across the whole
+        # eval run (every gold-labeled span was matched by at least one
+        # detection). Worth stating outright rather than leaving a bare
+        # heading with nothing under it, which reads as broken/incomplete
+        # rather than as the actual finding it is.
+        lines.append(
+            f"No false negatives found -- every gold-labeled span was matched by at least one "
+            f"detection (OVERLAP recall = 1.0000 across {result['docs_evaluated']} documents). "
+            f"See `eval/final_results.csv` / the Evaluation Dashboard's Overall Recall (OVERLAP) "
+            f"metric for confirmation.\n"
+        )
     for i, item in enumerate(fn_sample, 1):
         lines.append(f"**FN {i}.** `{item['phi_type']}` missed gold text: `{item.get('text', '(n/a)')}` "
                       f"in `{item['filename']}`\n")

@@ -523,6 +523,30 @@ def _render_evaluation_dashboard() -> None:
     else:
         st.info("No `eval/error_analysis.md` yet -- run `python -m eval.error_analysis` first.")
 
+    st.divider()
+    st.subheader("LLM classification: heuristic vs LLM")
+    classification_md = EVAL_DIR / "classification_results.md"
+    if classification_md.exists():
+        st.markdown(classification_md.read_text(encoding="utf-8"))
+    else:
+        st.info("No `eval/classification_results.md` yet -- run `python -m eval.classification_eval` first.")
+
+    st.divider()
+    st.subheader("LLM adjudication vs human review")
+    adjudication_md = EVAL_DIR / "adjudication_results.md"
+    if adjudication_md.exists():
+        st.markdown(adjudication_md.read_text(encoding="utf-8"))
+    else:
+        st.info("No `eval/adjudication_results.md` yet -- run `python -m eval.adjudication_eval` first.")
+
+    st.divider()
+    st.subheader("API load test")
+    load_test_md = EVAL_DIR / "load_test_results.md"
+    if load_test_md.exists():
+        st.markdown(load_test_md.read_text(encoding="utf-8"))
+    else:
+        st.info("No `eval/load_test_results.md` yet -- run `python -m eval.load_test` first.")
+
 
 # ---------------------------------------------------------------------------
 # Page routing

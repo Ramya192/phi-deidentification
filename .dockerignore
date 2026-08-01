@@ -1,10 +1,16 @@
 .git
 .gitignore
 .venv
+.venv311
+venv
 __pycache__
 **/__pycache__
 .pytest_cache
 data/checkpoints.sqlite
+data/checkpoints.sqlite-wal
+data/checkpoints.sqlite-shm
+data/audit*.sqlite*
+data/scratch*.sqlite*
 data/demo_uploads
 *.pyc
 .DS_Store

@@ -25,6 +25,35 @@ see the comments in those two files. That path was not used for the live
 demo link above because Hugging Face now gates Docker Spaces behind a
 payment method on file, which Streamlit Community Cloud does not require.
 
+## Start here
+
+This document is long because the underlying engineering is real and
+documented in depth — this section is the 90-second version; everything
+below is the full reference.
+
+- **What it does:** an 8-node LangGraph pipeline (`ClassificationAgent` →
+  `PHIDetectionAgent` → optional `LLMAdjudicationAgent` → `HumanReviewAgent`
+  → `RedactionAgent` → `ComplianceValidationAgent` → `AuditReportAgent`)
+  that detects and redacts HIPAA Safe Harbor PHI in clinical documents,
+  with a human (or optional LLM) reviewing anything it isn't confident about.
+- **Current measured numbers** (Presidio backend, 350 labeled documents,
+  2,150+ labeled spans — reproducible today via `python -m eval.evaluate
+  --backend presidio`, dependencies pinned exactly, see "Evaluation"
+  below): **OVERLAP F1 0.6587, precision 0.4923, recall 0.9949** (11
+  false negatives, all `DATE_TIME`).
+- **Run it in 3 commands:**
+  ```bash
+  pip install -r requirements.txt && python -m spacy download en_core_web_lg
+  export PHI_DEID_API_KEY=dev-local-key && uvicorn api.main:app --port 8000 &
+  streamlit run app/streamlit_app.py
+  ```
+- **Try it without installing anything:** [live demo](https://phi-deidentification.streamlit.app/) (no signup needed).
+- **Test suite:** 66 tests, `pytest -q` (see "Run tests" below).
+- **Known limits, stated up front, not buried:** synthetic evaluation
+  data only (no real clinical notes, no n2c2 benchmark validation);
+  single-process SQLite ceiling (measured, see `eval/load_test.py`); no
+  clinical-domain NER fine-tuning. Full list under "Production roadmap."
+
 ## Architecture
 
 ```mermaid
@@ -310,10 +339,23 @@ length-preserving `[REDACTED:Nchars]` placeholder. Type, confidence, and
 pass/fail all survive for reporting; only the literal identifier value is
 stripped. This is enforced once, inside `store_audit()` itself, so every
 caller gets it automatically rather than relying on each call site to
-remember to sanitize. Note this fixes the *data-exposure* half of
-`GET /records/{id}/audit` — it does not add per-record authorization to
-that endpoint, which remains a known, undone gap (see "Limitations &
-Future Work").
+remember to sanitize.
+
+**Per-record authorization.** Every `AuditRecordDB` row is tagged with a
+`client_id` — the caller's optional `X-Client-Id` header at the time the
+run completed, or `DEFAULT_CLIENT_ID` ("default") if they never set one.
+`GET /records/{id}/audit` and `GET /records` both scope to the requesting
+caller's own `client_id`, 404ing on a record that belongs to someone
+else rather than 403ing (so the endpoint doesn't leak which record_ids
+exist to a caller that doesn't own them). An optional
+`PHI_DEID_ADMIN_API_KEY` bypasses the scoping entirely for an operator
+who needs cross-client visibility. Single-tenant deployments — one
+shared `X-API-Key`, nobody ever sets `X-Client-Id` — see no behavior
+change from before this existed, since every record and every caller
+share the same default scope. A pre-existing `audit.sqlite` from before
+this was added gets its `client_id` column backfilled automatically
+(`AuditStore._ensure_client_id_column`), not left to error on the first
+query.
 
 ## Guardrails
 
@@ -521,9 +563,9 @@ has ample real source rows.
 
 This writes documents to `data/txt_format/` and a
 `data/txt_format/ground_truth.json` manifest (filename ->
-doc_type + exact PHI spans). Current batch: **354 documents, 50 per type
-(51 for clinical_note/discharge_summary/insurance_document, which also
-have one original hand-written fixture each), 2,150+ labeled PHI spans.**
+doc_type + exact PHI spans). Current batch: **350 documents, 50 per
+type, 2,150+ labeled PHI spans** (verified against `ground_truth.json`
+directly, not a stale figure from an earlier dataset build).
 
 ## Evaluation
 
@@ -652,6 +694,22 @@ neither recognizer is relevant to this project's all-US clinical
 documents). Re-ran `--backend presidio` once more: OVERALL reached **F1
 0.6814** (P 0.5167, R 1.0000, 2150 TP / 2011 FP / 0 FN) — every one of
 the 2,150 labeled spans is now caught, zero false negatives project-wide.
+
+**Update (2026-08-01): this number doesn't reproduce anymore, and that's
+itself worth documenting rather than silently updating.** `requirements.txt`
+pins `presidio-analyzer>=2.2.0` and `spacy>=3.7.2,<3.8.0` with no upper
+bound on Presidio's patch version, so `pip install -r requirements.txt`
+today installs whatever the latest matching Presidio release is (currently
+`presidio_analyzer==2.2.364`), not necessarily the exact version this
+result was measured against. Re-running `python -m eval.evaluate
+--backend presidio` right now gives **F1 0.6587** (P 0.4923, R 0.9949,
+2139 TP / 2206 FP / **11 FN**, all `DATE_TIME`) — still strong, but no
+longer literally zero false negatives. `eval/error_analysis.md` (and the
+Evaluation Dashboard's "Error analysis" section) shows the 11 real misses
+with context. If you need the exact original number, pin
+`presidio-analyzer==<the version that produced it>`; otherwise treat
+"zero false negatives" as historically accurate for this project's
+debugging story, not as this repo's current reproducible result.
 
 One more honest caveat: some fallback "false positives" for DATE_TIME —
 and a good chunk of the LOCATION/NRP/US_DRIVER_LICENSE/etc. false
@@ -910,11 +968,39 @@ otherwise straight to the redacted text, compliance report, audit log, and
 per-node timing.
 
 The sidebar's **View** switch also has an **Evaluation dashboard** page —
-reads `eval/final_results.csv`, `eval/ablation_results.md`, and
-`eval/error_analysis.md` directly off disk and renders them in the UI, so
-the ablation study and error analysis are visible without leaving the app
-or opening the repo separately. Run the three `eval/*.py` scripts (see
-"Evaluation" above) first if those files don't exist yet.
+reads `eval/final_results.csv`, `eval/ablation_results.md`,
+`eval/error_analysis.md`, `eval/classification_results.md`,
+`eval/adjudication_results.md`, and `eval/load_test_results.md` directly
+off disk and renders them in the UI, so every eval report is visible
+without leaving the app or opening the repo separately. Run the
+corresponding `eval/*.py` script (see "Evaluation" above) first for any
+file that doesn't exist yet — each section shows an `st.info` pointing at
+the right command instead of silently omitting itself.
+
+## Screenshots
+
+Captured from a live local run against the "Discharge summary —
+ambiguous identifier" sample document, chosen specifically because it
+triggers a real human-review pause rather than a clean straight-through
+run.
+
+![Upload interface](docs/screenshots/01_upload.png)
+*Document input — paste text, upload a file, or load a bundled sample. Sidebar documents the 8-agent pipeline and tech stack.*
+
+![Live pipeline progress](docs/screenshots/02_pipeline_progress.png)
+*Mid-run: Classification and PHI Detection already completed (✅), Human review paused (⏸), three steps still pending. Sourced from the real SSE stream (`/redact/stream`) driven by actual LangGraph node completions — not a simulated animation.*
+
+![Human review form](docs/screenshots/03_human_review.png)
+*A low-confidence `PHONE_NUMBER` span (confidence 0.40) routed to a human reviewer for an approve/reject decision — the hard gate described in "Guardrails" above, not a suggestion a code path can skip.*
+
+![Redacted result](docs/screenshots/04_redacted_result.png)
+*Final output: `[PERSON]`, `[DATE_TIME]`, `[ACCOUNT_NUMBER]`, `[PHONE_NUMBER]` replacing the original identifiers in a real discharge summary.*
+
+![Observability and LLM cost](docs/screenshots/05_observability_llm_cost.png)
+*Per-node wall-clock timing plus real token counts and cost from an actual LLM call (not just confirmation that a backend flag was set) — see "Retrieval-augmented classification" above.*
+
+![Evaluation dashboard](docs/screenshots/06_evaluation_dashboard.png)
+*Live-rendered numbers read directly from `eval/*.md`/`.csv` output files, not hand-entered into the UI. Note: the specific precision/recall/F1 shown here will differ slightly from a fresh eval run — see the "reproducibility drift" caveat in the Evaluation section above.*
 
 ## Deployment
 
@@ -976,10 +1062,9 @@ git remote as usual.
 
 This started as a list of known simplifications; the items below marked
 **Implemented** were closed out in a later hardening pass (see git
-history / conversation log), the rest are documented as real gaps rather
-than fixed, given the capstone deadline — they'd be the next things to
-build for an actual production deployment, not things that got
-overlooked.
+history), the rest are documented as real gaps rather than fixed, given
+the capstone deadline — they'd be the next things to build for an actual
+production deployment, not things that got overlooked.
 
 ### Implemented
 
@@ -1132,7 +1217,11 @@ overlooked.
 - **Single-process deployment ceiling.** The SQLite checkpointer doesn't
   scale past one process (single-writer). A multi-replica deployment
   needs a Postgres or Redis checkpointer instead — same `_build_checkpointer()`
-  seam in `graph/workflow.py`, different backend.
+  seam in `graph/workflow.py`, different backend. Measured, not just
+  asserted: `eval/load_test.py` shows `POST /redact` throughput peaking
+  at concurrency=5 (915 docs/min) and degrading as concurrency climbs
+  further (543 docs/min at 10, 448 docs/min at 20, p50 latency 81ms →
+  2219ms) — see "Implemented (post-evaluation hardening pass)" below.
 - **Ground truth doesn't cover PHI in narrative body text**, only the
   synthetic header fields we deliberately inject — real dates, names, or
   locations that happen to appear in the borrowed mtsamples transcription
@@ -1231,3 +1320,55 @@ overlooked.
   `tests/test_retry_escalation.py`, `tests/test_escalation_auto_redact.py`,
   `tests/test_compliance_checks.py`, `tests/test_llm_metrics.py` — 51
   tests total across the whole suite, zero regressions.
+
+### Implemented (post-evaluation hardening pass)
+
+A further hardening pass closing several remaining gaps:
+
+- **JSON request body size limit.** `POST /redact`'s `RedactRequest.text`
+  had no cap — only the file-upload endpoints did (`MAX_FILE_SIZE_BYTES`).
+  Now enforced via Pydantic's `max_length` on the field itself
+  (`MAX_TEXT_LENGTH_CHARS`, same 50MB ceiling), returning a 422 instead of
+  accepting an unbounded payload.
+- **LLM classification tier evaluation** (`eval/classification_eval.py`)
+  — run against the full 350-document labeled dataset: **96.86% accuracy
+  vs. 80.86% for the heuristic backend (+16.0 points)**, at $0.000112/doc
+  and ~1.6s/doc, with a 0% fallback-to-heuristic rate across all 350
+  documents. Per-type precision/recall/F1 and full confusion matrices in
+  `eval/classification_results.md`.
+- **LLM adjudication tier evaluation** (`eval/adjudication_eval.py`) —
+  scores four configurations (NO_REVIEW, PERFECT_HUMAN, LLM_ONLY,
+  LLM_PLUS_HUMAN) against the same dataset. Result: **LLM-only
+  adjudication matches or marginally exceeds the perfect-human-reviewer
+  upper bound** (OVERLAP F1 0.5020 vs. 0.5005) across 285 documents with
+  low-confidence spans, at $0.000256/doc and ~4.0s/doc. Full numbers in
+  `eval/adjudication_results.md`.
+- **Per-record audit authorization** (`storage/audit_store.py`,
+  `api/main.py`) — `GET /records/{id}/audit` and `GET /records` now scope
+  to the caller's `X-Client-Id`, with an optional `PHI_DEID_ADMIN_API_KEY`
+  for cross-client access. See "Persistent audit trail" above for the
+  full design and `tests/test_audit_record_auth.py` for coverage.
+- **Load test** (`eval/load_test.py`) — lightweight in-process throughput/
+  latency test for `POST /redact` at increasing concurrency (no locust/k6
+  infra, since there's no live deployment to point one at). Found real
+  throughput peaking at concurrency=5 (915 docs/min) and degrading past
+  that point (448 docs/min at concurrency=20, p50 latency 81ms → 2219ms)
+  — concrete evidence for the "single-process deployment ceiling" gap
+  above, not just an assertion. Full numbers in `eval/load_test_results.md`.
+- **Statistical significance on the ablation study** — `eval/ablation_study.py`
+  now runs a paired bootstrap (2000 resamples over documents) and reports
+  a 95% CI on the HumanReviewAgent F1 delta. Both deltas are significant:
+  STRICT +0.0625 CI [+0.0566, +0.0685], OVERLAP +0.0411 CI
+  [+0.0345, +0.0476] — see "Ablation study and error analysis" below.
+- **Chaos test: SQLite corruption** (`tests/test_chaos_sqlite_corruption.py`)
+  — reproduces the actual "database disk image is malformed" incident
+  documented in Troubleshooting below. Confirms `POST /redact` still
+  succeeds against a corrupted audit store (best-effort persistence
+  protects the primary flow); found and fixed `GET /records/{id}/audit`
+  and `GET /records` leaking an unhandled exception on the same failure —
+  both now return a clean generic 500 instead, matching `/redact*`'s
+  existing PHI-safe error posture. No auto-repair added; the documented
+  manual fix (stop, delete, restart) is still the real answer.
+- **Test coverage** — `tests/test_audit_record_auth.py` (5 new tests),
+  `tests/test_chaos_sqlite_corruption.py` (4 new tests) — 66 tests total
+  across the whole suite, zero regressions.

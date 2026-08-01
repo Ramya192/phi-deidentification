@@ -1,9 +1,29 @@
 langgraph>=0.2.0
 langgraph-checkpoint-sqlite>=2.0.0
 langchain-core>=0.3.0
-presidio-analyzer>=2.2.0
-presidio-anonymizer>=2.2.0
-spacy>=3.7.2,<3.8.0
+
+# --- PHI-detection-accuracy-critical: pinned EXACTLY, not >=. ---
+# Every F1/precision/recall number in README.md, LECTURER_EVALUATION.md, and
+# the capstone report was produced against this exact version set. An
+# earlier unpinned `presidio-analyzer>=2.2.0` let a routine `pip install`
+# silently pick up a newer Presidio release than whatever produced the
+# originally-reported numbers, and the two don't agree: re-running the eval
+# after that drift dropped OVERLAP F1 from 0.6814 to 0.6587 and introduced
+# 11 real false negatives (all DATE_TIME) that weren't there before --
+# same code, same dataset, different recognizer behavior under the hood.
+# Documented as a reproducibility finding rather than silently patched over
+# (see README's "Evaluation" section) -- but the actual fix for *future*
+# clones is here: pin exactly, so `pip install -r requirements.txt` today
+# reproduces the exact numbers in the report, not whatever Presidio/spaCy
+# happen to ship next month. If you deliberately upgrade one of these,
+# re-run `python -m eval.evaluate --backend presidio` and update every
+# number in README/report/deck to match -- don't let them silently diverge
+# again.
+presidio-analyzer==2.2.364
+presidio-anonymizer==2.2.364
+spacy==3.7.5
+thinc==8.2.5
+blis==0.7.11
 # thinc==8.2.x (a spacy 3.7.x dependency) ships Cython extensions compiled
 # against NumPy 1.x's internal dtype struct layout. NumPy 2.0 changed that
 # layout, so an unpinned numpy resolves to 2.x and thinc's compiled
@@ -30,6 +50,7 @@ openai>=1.30.0  # optional: only needed if PHI_DEID_CLASSIFICATION_BACKEND=llm
 python-dotenv>=1.0.0  # loads .env locally; harmless no-op if no .env file exists
 sqlalchemy>=2.0.0  # storage/audit_store.py -- persistent, queryable audit trail
 langsmith>=0.1.0  # optional: only used if LANGCHAIN_API_KEY is set (see tracing.py)
+slowapi>=0.1.9  # Rate limiting for API endpoints -- prevents DOS attacks and resource exhaustion
 langchain-openai>=0.2.0  # optional: only needed if PHI_DEID_ADJUDICATION_BACKEND=llm (agents/llm_adjudication_agent.py)
 
 # en_core_web_sm as a direct pip-installable wheel: this is what the

@@ -19,12 +19,21 @@ if it's unset, a random key is generated for that process only and
 printed to the console (fine for a quick local test, not for anything
 you'd call twice or deploy).
 
+Optionally, callers can also send an `X-Client-Id` header to scope their
+records: GET /records/{id}/audit and GET /records only return records
+created with a matching X-Client-Id (see `get_client_id`). Callers that
+never set it all share one default scope, so a single-tenant deployment
+(one shared X-API-Key for everyone, the common case) behaves exactly as
+before. Set PHI_DEID_ADMIN_API_KEY to a second key that bypasses this
+scoping entirely, for an operator who needs to see every client's records.
+
 Run locally:
     export PHI_DEID_API_KEY=dev-local-key   # or let it auto-generate and print one
     uvicorn api.main:app --reload --port 8000
 
 Docs at http://localhost:8000/docs once running.
 """
+
 from __future__ import annotations
 
 import json
@@ -34,10 +43,12 @@ import secrets
 import uuid
 from typing import Any
 
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 try:
     # Loads variables from a local .env file into os.environ, if one
@@ -71,13 +82,20 @@ elif _env_mode == "local":
     os.environ["PHI_DEID_EMBED_API"] = "0"
     os.environ["PHI_DEID_SPACY_MODEL"] = "en_core_web_lg"
 
-from graph.workflow import compiled_graph, get_checkpointer_backend, resume_stream, resume_sync, run_stream, run_sync
+from graph.workflow import (
+    compiled_graph,
+    get_checkpointer_backend,
+    resume_stream,
+    resume_sync,
+    run_stream,
+    run_sync,
+)
 from ingestion.document_loader import (
     EmptyDocumentError,
     UnsupportedFileTypeError,
     load_text_from_bytes,
 )
-from storage.audit_store import get_audit_store
+from storage.audit_store import DEFAULT_CLIENT_ID, get_audit_store
 
 # ---------------------------------------------------------------------------
 # Logging -- PHI-safe by construction. Every log call below is built from a
@@ -92,14 +110,20 @@ from storage.audit_store import get_audit_store
 # whoever called the endpoint, which is what the old `detail=str(exc)`
 # responses did.
 # ---------------------------------------------------------------------------
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+)
 logger = logging.getLogger("phi_deid_api")
+
+# Rate limiter for DOS prevention -- max 100 requests per minute per IP address
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="PHI De-identification API",
     description="LangGraph multi-agent PHI detection, redaction, and compliance validation.",
     version="0.1.0",
 )
+app.state.limiter = limiter
 
 # ---------------------------------------------------------------------------
 # API key auth -- every PHI-handling endpoint requires X-API-Key.
@@ -119,23 +143,67 @@ if not _configured_api_key:
         "survives restarts (required before any real deployment)."
     )
 
+# Optional second key that can read/list every caller's audit records,
+# regardless of X-Client-Id -- unset by default, meaning nobody gets
+# cross-client access until an operator deliberately configures one.
+_admin_api_key = os.environ.get("PHI_DEID_ADMIN_API_KEY")
+
 
 def verify_api_key(provided_key: str | None = Depends(_api_key_header)) -> None:
-    if provided_key is None or not secrets.compare_digest(provided_key, _configured_api_key):
-        raise HTTPException(status_code=401, detail="Missing or invalid API key (X-API-Key header).")
+    if provided_key is None:
+        raise HTTPException(
+            status_code=401, detail="Missing or invalid API key (X-API-Key header)."
+        )
+    is_valid = secrets.compare_digest(provided_key, _configured_api_key) or (
+        _admin_api_key is not None and secrets.compare_digest(provided_key, _admin_api_key)
+    )
+    if not is_valid:
+        raise HTTPException(
+            status_code=401, detail="Missing or invalid API key (X-API-Key header)."
+        )
 
 
-class RedactRequest(BaseModel):
-    text: str = Field(..., description="Raw document text to de-identify.")
-    filename: str = Field(default="uploaded_document", description="Original filename, for the audit trail.")
+def is_admin_key(provided_key: str | None = Depends(_api_key_header)) -> bool:
+    return _admin_api_key is not None and provided_key is not None and secrets.compare_digest(
+        provided_key, _admin_api_key
+    )
+
+
+def get_client_id(x_client_id: str | None = Header(default=None)) -> str:
+    """Caller-supplied scoping identity for per-record audit access --
+    not an authentication mechanism itself (verify_api_key still gates
+    every endpoint), just a way to tag which caller created a record so
+    GET /records/{id}/audit and GET /records can refuse to hand back a
+    different caller's PHI-adjacent audit trail. Callers that never set
+    X-Client-Id all share DEFAULT_CLIENT_ID, so a single-tenant
+    deployment (the common case, one shared API key for everyone) sees
+    no behavior change from before this existed."""
+    return x_client_id or DEFAULT_CLIENT_ID
 
 
 MAX_BATCH_SIZE = 50
+MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB file size limit to prevent OOM/DOS
+MAX_TEXT_LENGTH_CHARS = MAX_FILE_SIZE_BYTES  # same ceiling for raw-text JSON payloads
+
+
+class RedactRequest(BaseModel):
+    text: str = Field(
+        ...,
+        min_length=1,
+        max_length=MAX_TEXT_LENGTH_CHARS,
+        description="Raw document text to de-identify.",
+    )
+    filename: str = Field(
+        default="uploaded_document",
+        description="Original filename, for the audit trail.",
+    )
 
 
 class BatchRedactRequest(BaseModel):
     documents: list[RedactRequest] = Field(
-        ..., min_length=1, max_length=MAX_BATCH_SIZE,
+        ...,
+        min_length=1,
+        max_length=MAX_BATCH_SIZE,
         description=f"Documents to de-identify, 1-{MAX_BATCH_SIZE} per request.",
     )
 
@@ -151,7 +219,7 @@ class ResumeRequest(BaseModel):
     decisions: list[ReviewDecision]
 
 
-def _persist_audit_record(thread_id: str, state: dict) -> None:
+def _persist_audit_record(thread_id: str, state: dict, client_id: str) -> None:
     """Writes the immutable audit record to storage/audit_store.py once a
     run reaches AuditReportAgent. Best-effort: a persistence failure (e.g.
     duplicate thread_id from a caller replaying a request, or a transient
@@ -160,6 +228,12 @@ def _persist_audit_record(thread_id: str, state: dict) -> None:
     their redacted_text/compliance_report back in the response either way,
     and this table is a queryable historical record, not something the
     response itself depends on.
+
+    client_id is whichever caller's request actually completes the run --
+    for a document that paused for human review, that's the /redact/resume
+    caller, not the original /redact caller, since store_audit() only
+    writes once a compliance_report exists. Same caller resuming their own
+    interrupted job in the normal case.
     """
     compliance_report = state.get("compliance_report")
     if not compliance_report:
@@ -169,19 +243,21 @@ def _persist_audit_record(thread_id: str, state: dict) -> None:
             record_id=thread_id,
             compliance_report=compliance_report,
             audit_log=state.get("audit_log", []),
+            client_id=client_id,
         )
     except Exception:
         logger.exception("failed to persist audit record thread_id=%s", thread_id)
 
 
-def _format_result(result: dict, thread_id: str) -> dict[str, Any]:
+def _format_result(result: dict, thread_id: str, client_id: str) -> dict[str, Any]:
     """Shared response shaping for /redact, /redact/upload, and /redact/resume
     -- all three ultimately produce the same run_sync()/resume_sync() result
     shape, so they format it the same way."""
     if result["status"] == "interrupted":
         logger.info(
             "human review required thread_id=%s pending_spans=%d",
-            thread_id, len(result["interrupt"].get("spans", []) or []),
+            thread_id,
+            len(result["interrupt"].get("spans", []) or []),
         )
         return {
             "status": "human_review_required",
@@ -197,7 +273,7 @@ def _format_result(result: dict, thread_id: str) -> dict[str, Any]:
         state.get("validation_status"),
         len(state.get("phi_spans", []) or []),
     )
-    _persist_audit_record(thread_id, state)
+    _persist_audit_record(thread_id, state, client_id)
     return {
         "status": "completed",
         "thread_id": thread_id,
@@ -216,7 +292,7 @@ def _sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
 
-def _stream_response(generator, thread_id: str, endpoint: str) -> StreamingResponse:
+def _stream_response(generator, thread_id: str, endpoint: str, client_id: str) -> StreamingResponse:
     """Shared SSE wrapper for the three /stream endpoints below: turns
     run_stream()/resume_stream()'s ("node", ...)/("done", ...) tuples into
     SSE messages, formats the final "done" event with the exact same
@@ -226,6 +302,7 @@ def _stream_response(generator, thread_id: str, endpoint: str) -> StreamingRespo
     PHI-safe 500 the non-streaming endpoints give -- logged server-side
     with full detail, only a thread_id sent to the caller.
     """
+
     def _generate():
         try:
             for kind, *rest in generator:
@@ -238,13 +315,18 @@ def _stream_response(generator, thread_id: str, endpoint: str) -> StreamingRespo
                         result = {"status": "interrupted", "interrupt": payload}
                     else:
                         result = {"status": "completed", "state": payload}
-                    yield _sse("done", _format_result(result, thread_id))
+                    yield _sse("done", _format_result(result, thread_id, client_id))
         except Exception:
-            logger.exception("unhandled error in %s (thread_id=%s)", endpoint, thread_id)
-            yield _sse("error", {
-                "thread_id": thread_id,
-                "detail": f"Internal error processing this document. Reference ID: {thread_id}",
-            })
+            logger.exception(
+                "unhandled error in %s (thread_id=%s)", endpoint, thread_id
+            )
+            yield _sse(
+                "error",
+                {
+                    "thread_id": thread_id,
+                    "detail": f"Internal error processing this document. Reference ID: {thread_id}",
+                },
+            )
 
     return StreamingResponse(_generate(), media_type="text/event-stream")
 
@@ -281,44 +363,97 @@ def health():
 
 
 @app.get("/records/{record_id}/audit", dependencies=[Depends(verify_api_key)])
-def get_audit_record(record_id: str):
+def get_audit_record(
+    record_id: str,
+    client_id: str = Depends(get_client_id),
+    admin: bool = Depends(is_admin_key),
+):
     """Retrieve the persisted audit record for a completed run (storage/audit_store.py),
     keyed by the same thread_id returned in every /redact* response. Distinct
     from the LangGraph checkpointer -- see storage/audit_store.py's module
-    docstring for why these are two separate stores with different lifetimes."""
-    record = get_audit_store().get_audit(record_id)
-    if record is None:
-        raise HTTPException(status_code=404, detail="No audit record found for this record_id.")
+    docstring for why these are two separate stores with different lifetimes.
+
+    Scoped to the record's own client_id (the X-Client-Id that created it),
+    unless the caller authenticated with PHI_DEID_ADMIN_API_KEY. A record
+    belonging to a different client_id 404s exactly like a nonexistent one
+    -- not 403 -- so this endpoint doesn't leak which record_ids exist to a
+    caller that doesn't own them.
+
+    A storage-layer failure (e.g. a corrupted audit.sqlite -- see README's
+    "database disk image is malformed" troubleshooting entry) is logged
+    server-side and returns a generic 500, same PHI-safe posture
+    _internal_error_response gives the /redact* endpoints, rather than an
+    unhandled exception leaking a raw traceback to the caller.
+    """
+    try:
+        record = get_audit_store().get_audit(record_id)
+    except Exception:
+        logger.exception("failed to read audit record record_id=%s", record_id)
+        raise HTTPException(
+            status_code=500, detail="Internal error reading audit record."
+        ) from None
+    if record is None or (not admin and record["client_id"] != client_id):
+        raise HTTPException(
+            status_code=404, detail="No audit record found for this record_id."
+        )
     return record
 
 
 @app.get("/records", dependencies=[Depends(verify_api_key)])
-def list_audit_records(limit: int = 100, offset: int = 0):
-    """Paginated list of persisted audit records, most recent first."""
+def list_audit_records(
+    limit: int = 100,
+    offset: int = 0,
+    client_id: str = Depends(get_client_id),
+    admin: bool = Depends(is_admin_key),
+):
+    """Paginated list of persisted audit records, most recent first.
+    Scoped to the caller's own client_id unless authenticated with
+    PHI_DEID_ADMIN_API_KEY, in which case every record is visible. Same
+    storage-failure handling as get_audit_record above."""
     limit = max(1, min(limit, 500))
     offset = max(0, offset)
-    return {"records": get_audit_store().list_audits(limit=limit, offset=offset)}
+    scope_client_id = None if admin else client_id
+    try:
+        records = get_audit_store().list_audits(limit=limit, offset=offset, client_id=scope_client_id)
+    except Exception:
+        logger.exception("failed to list audit records")
+        raise HTTPException(
+            status_code=500, detail="Internal error listing audit records."
+        ) from None
+    return {"records": records}
 
 
 @app.post("/redact", dependencies=[Depends(verify_api_key)])
-def redact(request: RedactRequest):
+@limiter.limit("100/minute")
+async def redact(request: Request, req: RedactRequest, client_id: str = Depends(get_client_id)):
     thread_id = str(uuid.uuid4())
     try:
-        result = run_sync(request.text, filename=request.filename, thread_id=thread_id)
+        result = run_sync(req.text, filename=req.filename, thread_id=thread_id)
     except Exception:
         raise _internal_error_response(thread_id, "/redact") from None
 
-    return _format_result(result, thread_id)
+    return _format_result(result, thread_id, client_id)
 
 
 @app.post("/redact/upload", dependencies=[Depends(verify_api_key)])
-async def redact_upload(file: UploadFile = File(...)):
+@limiter.limit("100/minute")
+async def redact_upload(
+    request: Request, file: UploadFile = File(...), client_id: str = Depends(get_client_id)
+):
     """Same pipeline as /redact, but takes an uploaded file (.txt, .pdf, or
     .docx) instead of raw JSON text. Text is extracted in-memory -- the file
     is never written to disk -- via ingestion/document_loader.py, then
     handed to the same run_sync() the JSON endpoint uses.
     """
     file_bytes = await file.read()
+
+    # Input size validation: prevent DOS via large file uploads causing OOM
+    if len(file_bytes) > MAX_FILE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum size is {MAX_FILE_SIZE_BYTES // (1024*1024)} MB.",
+        )
+
     filename = file.filename or "uploaded_document"
 
     try:
@@ -336,11 +471,14 @@ async def redact_upload(file: UploadFile = File(...)):
     except Exception:
         raise _internal_error_response(thread_id, "/redact/upload") from None
 
-    return _format_result(result, thread_id)
+    return _format_result(result, thread_id, client_id)
 
 
 @app.post("/redact/batch", dependencies=[Depends(verify_api_key)])
-def redact_batch(request: BatchRedactRequest):
+@limiter.limit("100/minute")
+async def redact_batch(
+    request: Request, req: BatchRedactRequest, client_id: str = Depends(get_client_id)
+):
     """Runs each document in `documents` through the same pipeline /redact
     uses, independently (its own thread_id, its own audit record). Not a
     single atomic transaction -- one document's failure or human-review
@@ -357,14 +495,18 @@ def redact_batch(request: BatchRedactRequest):
     batch would serialize badly anyway.
     """
     results: list[dict[str, Any]] = []
-    for index, document in enumerate(request.documents):
+    for index, document in enumerate(req.documents):
         thread_id = str(uuid.uuid4())
         try:
-            result = run_sync(document.text, filename=document.filename, thread_id=thread_id)
-            formatted = _format_result(result, thread_id)
+            result = run_sync(
+                document.text, filename=document.filename, thread_id=thread_id
+            )
+            formatted = _format_result(result, thread_id, client_id)
         except Exception:
             logger.exception(
-                "unhandled error in /redact/batch item index=%d thread_id=%s", index, thread_id,
+                "unhandled error in /redact/batch item index=%d thread_id=%s",
+                index,
+                thread_id,
             )
             formatted = {
                 "status": "error",
@@ -376,21 +518,26 @@ def redact_batch(request: BatchRedactRequest):
     return {
         "count": len(results),
         "completed": sum(1 for r in results if r["status"] == "completed"),
-        "human_review_required": sum(1 for r in results if r["status"] == "human_review_required"),
+        "human_review_required": sum(
+            1 for r in results if r["status"] == "human_review_required"
+        ),
         "errors": sum(1 for r in results if r["status"] == "error"),
         "results": results,
     }
 
 
 @app.post("/redact/resume", dependencies=[Depends(verify_api_key)])
-def redact_resume(request: ResumeRequest):
-    decisions = [d.model_dump() for d in request.decisions]
+@limiter.limit("100/minute")
+async def redact_resume(
+    request: Request, req: ResumeRequest, client_id: str = Depends(get_client_id)
+):
+    decisions = [d.model_dump() for d in req.decisions]
     try:
-        result = resume_sync(decisions, thread_id=request.thread_id)
+        result = resume_sync(decisions, thread_id=req.thread_id)
     except Exception:
-        raise _internal_error_response(request.thread_id, "/redact/resume") from None
+        raise _internal_error_response(req.thread_id, "/redact/resume") from None
 
-    return _format_result(result, request.thread_id)
+    return _format_result(result, req.thread_id, client_id)
 
 
 # ---------------------------------------------------------------------------
@@ -403,17 +550,33 @@ def redact_resume(request: ResumeRequest):
 # what the non-streaming endpoint would have returned outright.
 # ---------------------------------------------------------------------------
 @app.post("/redact/stream", dependencies=[Depends(verify_api_key)])
-def redact_stream(request: RedactRequest):
+@limiter.limit("100/minute")
+async def redact_stream(
+    request: Request, req: RedactRequest, client_id: str = Depends(get_client_id)
+):
     thread_id = str(uuid.uuid4())
     return _stream_response(
-        run_stream(request.text, filename=request.filename, thread_id=thread_id),
-        thread_id, "/redact/stream",
+        run_stream(req.text, filename=req.filename, thread_id=thread_id),
+        thread_id,
+        "/redact/stream",
+        client_id,
     )
 
 
 @app.post("/redact/upload/stream", dependencies=[Depends(verify_api_key)])
-async def redact_upload_stream(file: UploadFile = File(...)):
+@limiter.limit("100/minute")
+async def redact_upload_stream(
+    request: Request, file: UploadFile = File(...), client_id: str = Depends(get_client_id)
+):
     file_bytes = await file.read()
+
+    # Input size validation: prevent DOS via large file uploads causing OOM
+    if len(file_bytes) > MAX_FILE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum size is {MAX_FILE_SIZE_BYTES // (1024*1024)} MB.",
+        )
+
     filename = file.filename or "uploaded_document"
 
     try:
@@ -426,14 +589,21 @@ async def redact_upload_stream(file: UploadFile = File(...)):
     thread_id = str(uuid.uuid4())
     return _stream_response(
         run_stream(text, filename=filename, thread_id=thread_id),
-        thread_id, "/redact/upload/stream",
+        thread_id,
+        "/redact/upload/stream",
+        client_id,
     )
 
 
 @app.post("/redact/resume/stream", dependencies=[Depends(verify_api_key)])
-def redact_resume_stream(request: ResumeRequest):
-    decisions = [d.model_dump() for d in request.decisions]
+@limiter.limit("100/minute")
+async def redact_resume_stream(
+    request: Request, req: ResumeRequest, client_id: str = Depends(get_client_id)
+):
+    decisions = [d.model_dump() for d in req.decisions]
     return _stream_response(
-        resume_stream(decisions, thread_id=request.thread_id),
-        request.thread_id, "/redact/resume/stream",
+        resume_stream(decisions, thread_id=req.thread_id),
+        req.thread_id,
+        "/redact/resume/stream",
+        client_id,
     )

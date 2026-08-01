@@ -2,8 +2,8 @@
 PHIValidationAgent (new — closes a gap between the capstone spec and what
 was actually built)
 
-The capstone architecture (claude-prompt-capstone.txt) describes this as a
-standalone node performing two distinct jobs:
+The capstone architecture spec describes this as a standalone node
+performing two distinct jobs:
   1. Confidence check — split detected spans into high/low confidence so
      the graph can route to RedactionAgent vs. HumanReviewAgent.
   2. Completeness/schema check — does the detected entity list cover the
